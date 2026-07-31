@@ -1,0 +1,11 @@
+{% load nav_extras %}
+<div class="content-header">
+  <h1>{{ page_title }}</h1>
+  <p class="content-meta">{{ page_intro|default:"This section is part of the JMCFI AMS roadmap." }}</p>
+</div>
+
+<div class="placeholder-panel">
+  {% icon icon_name|default:'clipboard' %}
+  <h2>{{ page_title }} is coming soon</h2>
+  <p>This module isn't built yet — the navigation, layout, and routing are already wired up so it can be dropped in without touching the rest of the app.</p>
+</div>

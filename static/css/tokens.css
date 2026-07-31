@@ -1,0 +1,47 @@
+:root {
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+
+  /* Surfaces */
+  --color-bg: #F2EEE5;
+  --color-surface: #FFFFFF;
+  --color-border: #E8E1D3;
+  --color-border-strong: #DCD3BF;
+
+  /* Text */
+  --color-text: #241C1F;
+  --color-text-muted: #6F665D;
+  --color-text-faint: #A79E90;
+
+  /* Brand — maroon */
+  --maroon-900: #430D22;
+  --maroon-800: #57112C;
+  --maroon-700: #6E1737;
+  --maroon-600: #862048;
+  --maroon-100: #F7E4EB;
+
+  /* Accents */
+  --rose-500: #C13A63;
+  --rose-100: #FCE7EE;
+
+  --green-600: #1D8A5B;
+  --green-500: #26A06B;
+  --green-100: #E0F4E9;
+
+  --gold-600: #B78A2E;
+  --gold-500: #CB9F3C;
+  --gold-100: #FAF0D8;
+
+  --red-600: #D94A55;
+  --red-100: #FCE3E4;
+
+  /* Shape */
+  --radius-lg: 16px;
+  --radius-md: 12px;
+  --radius-sm: 8px;
+  --radius-pill: 999px;
+
+  --shadow-card: 0 1px 2px rgba(37, 20, 15, 0.04), 0 6px 20px rgba(67, 13, 34, 0.05);
+
+  --sidebar-width: 252px;
+  --topbar-height: 68px;
+}

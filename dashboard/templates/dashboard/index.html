@@ -1,0 +1,108 @@
+{% extends 'base.html' %}
+{% load static nav_extras %}
+
+{% block extra_css %}
+  <link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+{% endblock %}
+
+{% block content %}
+  <div class="content-header">
+    <h1>Dashboard</h1>
+    <p class="content-meta">
+      {{ cycle.office }} · Academic Year {{ cycle.academic_year }} · {{ cycle.program }}
+    </p>
+  </div>
+
+  <section class="alert-banner">
+    <div class="alert-icon">{% icon 'bolt' %}</div>
+    <div class="alert-body">
+      <div class="alert-tags">
+        <span class="alert-tag">AI Decision Support</span>
+        <span class="alert-tag-pill">Proactive Alert</span>
+      </div>
+      <p class="alert-text">
+        <strong>{{ alert.area_code }} ({{ alert.area_name }})</strong> {{ alert.message }}
+      </p>
+    </div>
+    <button type="button" class="btn btn-ghost-light">
+      Review
+      {% icon 'chevron-right' 'icon' %}
+    </button>
+  </section>
+
+  <section class="stat-grid">
+    {% for stat in stats %}
+      <div class="stat-card">
+        <div class="stat-card-top">
+          <div class="stat-icon tone-{{ stat.tone }}">{% icon stat.icon %}</div>
+          <div class="stat-trend">{% icon 'trend-up' %}</div>
+        </div>
+        <div class="stat-value">{{ stat.value }}</div>
+        <div class="stat-label">{{ stat.label }}</div>
+        <div class="stat-note">{{ stat.note }}</div>
+      </div>
+    {% endfor %}
+  </section>
+
+  <section class="panel-grid">
+    <div class="panel">
+      <div class="panel-head">
+        <div>
+          <div class="panel-title">Submission Trend</div>
+          <div class="panel-subtitle">{{ trend.range_label }}</div>
+        </div>
+        <div class="legend">
+          {% for s in trend.chart.series %}
+            <span class="legend-item">
+              <span class="legend-dot c-{{ s.color }}"></span>{{ s.name }}
+            </span>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div class="trend-chart-wrap">
+        <div class="trend-y-axis">
+          {% for tick in trend.y_ticks %}<span>{{ tick }}</span>{% endfor %}
+        </div>
+        <div class="trend-svg-area">
+          <svg viewBox="0 0 {{ trend.chart.width }} {{ trend.chart.height }}" preserveAspectRatio="none">
+            {% for s in trend.chart.series %}
+              {% if forloop.first %}
+                <polygon class="trend-area" fill="var(--maroon-700)" points="{{ s.area_points }}"></polygon>
+              {% endif %}
+            {% endfor %}
+            {% for s in trend.chart.series %}
+              <polyline class="trend-line c-{{ s.color }}" points="{{ s.points }}"></polyline>
+            {% endfor %}
+          </svg>
+          <div class="trend-x-axis">
+            {% for lbl in trend.chart.x_labels %}<span>{{ lbl.label }}</span>{% endfor %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head">
+        <div>
+          <div class="panel-title">Area Readiness</div>
+          <div class="panel-subtitle">{{ area_readiness.sublabel }}</div>
+        </div>
+      </div>
+
+      <div class="readiness-list">
+        {% for area in area_readiness.areas %}
+          <div class="readiness-row">
+            <span class="readiness-label">{{ area.code }}</span>
+            <div class="readiness-track">
+              <div class="readiness-fill tone-{{ area.tone }}" style="width: {{ area.value }}%;"></div>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+      <div class="readiness-x-axis">
+        <span>0%</span><span>25%</span><span>50%</span><span>75%</span><span>100%</span>
+      </div>
+    </div>
+  </section>
+{% endblock %}

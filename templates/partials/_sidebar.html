@@ -1,0 +1,43 @@
+{% load static nav_extras %}
+<aside class="sidebar">
+  <div class="sidebar-brand">
+    <img
+      class="brand-logo"
+      src="{% static 'images/jmcfi-logo.png' %}"
+      alt="JMCFI logo"
+    >
+    <div class="brand-text">
+      <div class="brand-name">JMCFI AMS</div>
+      <div class="brand-sub">Accreditation Portal</div>
+    </div>
+  </div>
+
+  <nav class="sidebar-nav">
+    {% for section in nav_sections %}
+      <div class="nav-section">
+        <div class="nav-section-label">{{ section.label }}</div>
+        {% for item in section.items %}
+          {% is_active_nav item.url_name as item_is_active %}
+          <a href="{% url item.url_name %}"
+             class="nav-item{% if item_is_active %} is-active{% endif %}">
+            {% icon item.icon %}
+            <span>{{ item.label }}</span>
+            {% if item.badge %}
+              <span class="nav-badge">{{ item.badge }}</span>
+            {% elif item_is_active %}
+              {% icon 'chevron-right' 'icon nav-chevron' %}
+            {% endif %}
+          </a>
+        {% endfor %}
+      </div>
+    {% endfor %}
+  </nav>
+
+  <div class="sidebar-footer">
+    <div class="avatar-chip">{{ current_user_summary.initials }}</div>
+    <div>
+      <div class="user-name">{{ current_user_summary.name }}</div>
+      <div class="user-role">{{ current_user_summary.role }}</div>
+    </div>
+  </div>
+</aside>
