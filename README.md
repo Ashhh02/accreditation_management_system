@@ -1,4 +1,4 @@
-# JMCFI AMS — Accreditation Portal (UI scaffold)
+<!-- # JMCFI AMS — Accreditation Portal (UI scaffold)
 
 Django project reproducing the AMS dashboard UI. This is the front-end
 shell only — no auth, no models, no real data yet — built so features
@@ -35,4 +35,4 @@ python manage.py migrate
 python manage.py runserver
 ```
 
-Visit http://127.0.0.1:8000/
+Visit http://127.0.0.1:8000/ -->
