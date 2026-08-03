@@ -40,7 +40,7 @@ class DashboardView(TemplateView):
         today = timezone.localdate()
         context['ai_support'] = {
             'date_label': today.strftime('%A, %B %d').upper(),
-            'greeting': 'Good evening, Bryl!',
+            'greeting': 'Good evening, Charles!',
             'name': 'MARIA',
             'message': (
                 'Area VIII needs attention. Readiness remains below target, '
