@@ -14,20 +14,25 @@
   </div>
 
   <section class="alert-banner">
-    <div class="alert-icon">{% icon 'bolt' %}</div>
-    <div class="alert-body">
-      <div class="alert-tags">
-        <span class="alert-tag">AI Decision Support</span>
-        <span class="alert-tag-pill">Proactive Alert</span>
+    <div class="alert-hero">
+      <div class="alert-figure">
+        <img src="{% static 'images/maria.png' %}" alt="AI decision support companion">
       </div>
-      <p class="alert-text">
-        <strong>{{ alert.area_code }} ({{ alert.area_name }})</strong> {{ alert.message }}
-      </p>
+
+      <div class="alert-header">
+        <p class="alert-date">{{ ai_support.date_label }}</p>
+        <h2 class="alert-title">{{ ai_support.greeting }}</h2>
+      </div>
     </div>
-    <button type="button" class="btn btn-ghost-light">
-      Review
-      {% icon 'chevron-right' 'icon' %}
-    </button>
+
+    <div class="alert-strip">
+      <div class="alert-message-card">
+        <p class="alert-agent">{{ ai_support.name }}</p>
+        <p class="alert-text">
+          <strong>{{ alert.area_code }} ({{ alert.area_name }})</strong> {{ ai_support.message }}
+        </p>
+      </div>
+    </div>
   </section>
 
   <section class="stat-grid">
