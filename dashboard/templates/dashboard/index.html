@@ -105,4 +105,62 @@
       </div>
     </div>
   </section>
+
+  <section class="dashboard-lower-grid">
+    <div class="panel panel-activity">
+      <div class="panel-head">
+        <div class="panel-title">Recent Activity</div>
+        <a href="#" class="panel-link">View all</a>
+      </div>
+
+      <div class="activity-list">
+        {% for item in recent_activity %}
+          <div class="activity-item">
+            <span class="activity-dot tone-{{ item.tone }}"></span>
+            <div class="activity-copy">
+              <p class="activity-text">
+                {{ item.actor }} {{ item.action }}
+                <span class="activity-target">{{ item.target }}</span>
+              </p>
+              <p class="activity-time">{{ item.time_ago }}</p>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="panel panel-deadlines">
+      <div class="panel-head">
+        <div class="panel-title">Upcoming Deadlines</div>
+        <a href="#" class="panel-link">See calendar</a>
+      </div>
+
+      <div class="deadline-list">
+        {% for deadline in upcoming_deadlines %}
+          <div class="deadline-card{% if deadline.urgent %} is-urgent{% endif %}">
+            <div class="deadline-days">
+              <strong>{{ deadline.days }}</strong>
+              <span>days</span>
+            </div>
+            <div class="deadline-copy">
+              <div class="deadline-title">{{ deadline.title }}</div>
+              <div class="deadline-date">{{ deadline.date_label }}</div>
+            </div>
+            {% if deadline.urgent %}
+              <div class="deadline-flag">{% icon 'alert' %}</div>
+            {% endif %}
+          </div>
+        {% endfor %}
+      </div>
+
+      <div class="quick-actions">
+        <div class="quick-actions-label">Quick Actions</div>
+        <div class="quick-actions-grid">
+          {% for action in quick_actions %}
+            <button type="button" class="quick-action-btn">{{ action }}</button>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </section>
 {% endblock %}

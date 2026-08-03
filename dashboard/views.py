@@ -91,4 +91,70 @@ class DashboardView(TemplateView):
             ],
         }
 
+        context['recent_activity'] = [
+            {
+                'tone': 'green',
+                'actor': 'Prof. J. Reyes',
+                'action': 'submitted evidence for',
+                'target': 'Area III – Instruction',
+                'time_ago': '14 min ago',
+            },
+            {
+                'tone': 'maroon',
+                'actor': 'Dr. E. Cruz',
+                'action': 'requested revision on',
+                'target': 'Area II – Faculty (Dept. C)',
+                'time_ago': '1h ago',
+            },
+            {
+                'tone': 'maroon',
+                'actor': 'AI Companion',
+                'action': 'flagged missing docs in',
+                'target': 'Area VII – Student Services',
+                'time_ago': '2h ago',
+            },
+            {
+                'tone': 'green',
+                'actor': 'Dr. M. Santos',
+                'action': 'approved',
+                'target': 'Area I – Philosophy (Level 1)',
+                'time_ago': '3h ago',
+            },
+            {
+                'tone': 'blue',
+                'actor': 'Prof. A. Dela Cruz',
+                'action': 'uploaded document to',
+                'target': 'Area V – Research Repository',
+                'time_ago': '5h ago',
+            },
+        ]
+
+        context['upcoming_deadlines'] = [
+            {
+                'days': 11,
+                'title': 'Level I Preliminary Submission',
+                'date_label': 'Aug 14, 2026',
+                'urgent': True,
+            },
+            {
+                'days': 20,
+                'title': 'Faculty Credentials – Area II',
+                'date_label': 'Aug 23, 2026',
+                'urgent': False,
+            },
+            {
+                'days': 32,
+                'title': 'External Review Window Opens',
+                'date_label': 'Sep 4, 2026',
+                'urgent': False,
+            },
+        ]
+
+        context['quick_actions'] = [
+            'Submit Evidence',
+            'Review Queue',
+            'Upload Document',
+            'View Reports',
+        ]
+
         return context
