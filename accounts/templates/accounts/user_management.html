@@ -1,4 +1,96 @@
 {% extends 'base.html' %}
+{% load static nav_extras %}
+
+{% block extra_css %}
+  <link rel="stylesheet" href="{% static 'css/user_management.css' %}">
+{% endblock %}
+
 {% block content %}
-  {% include 'partials/_placeholder.html' with icon_name='users' %}
+  <div class="users-page">
+    <div class="users-breadcrumb">
+      <span>Administration</span>
+      <span>/</span>
+      <strong>User Management</strong>
+    </div>
+
+    <header class="users-header">
+      <h1>User Management</h1>
+      <p>Manage institutional accounts and access control</p>
+    </header>
+
+    <section class="users-stat-grid" aria-label="User summary">
+      {% for stat in user_stats %}
+        <article class="users-stat-card">
+          <strong class="tone-{{ stat.tone }}">{{ stat.value }}</strong>
+          <span>{{ stat.label }}</span>
+        </article>
+      {% endfor %}
+    </section>
+
+    <section class="users-toolbar" aria-label="User search and filters">
+      <label class="users-search">
+        {% icon 'search' %}
+        <input type="search" placeholder="Search users...">
+      </label>
+
+      <div class="users-filter-tabs" aria-label="Filter users by status">
+        <button type="button" class="is-active">All</button>
+        <button type="button">Active</button>
+        <button type="button">Pending</button>
+        <button type="button">Inactive</button>
+      </div>
+    </section>
+
+    <section class="users-table-card">
+      <div class="users-table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>User</th>
+              <th>Role</th>
+              <th>Department</th>
+              <th>Auth</th>
+              <th>Status</th>
+              <th>Approval</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for user in users %}
+              <tr>
+                <td>
+                  <div class="user-identity">
+                    <span class="user-avatar">{{ user.initials }}</span>
+                    <div>
+                      <strong>{{ user.name }}</strong>
+                      <span>{{ user.email }}</span>
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  <span class="user-chip tone-{{ user.role_tone }}">{{ user.role }}</span>
+                </td>
+                <td>{{ user.department }}</td>
+                <td class="user-auth">{{ user.auth }}</td>
+                <td>
+                  <span class="user-presence tone-{{ user.status_tone }}">{{ user.status }}</span>
+                </td>
+                <td>
+                  <span class="user-chip tone-{{ user.approval_tone }}">{{ user.approval }}</span>
+                </td>
+                <td>
+                  <button type="button" class="manage-btn">Manage</button>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <footer class="users-table-footer">
+        <span>Showing 7 of 7 users</span>
+        <span class="page-pill">1</span>
+      </footer>
+    </section>
+  </div>
 {% endblock %}
