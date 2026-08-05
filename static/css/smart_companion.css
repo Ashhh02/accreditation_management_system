@@ -1,5 +1,8 @@
 .companion-page {
   width: 100%;
+  min-height: calc(100vh - 52px);
+  display: flex;
+  flex-direction: column;
 }
 
 .companion-header {
@@ -17,8 +20,9 @@
 }
 
 .companion-card {
-  width: min(100%, 904px);
-  min-height: 575px;
+  width: 100%;
+  min-height: 0;
+  flex: 1;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -69,12 +73,14 @@
 .companion-body {
   flex: 1;
   padding: 14px 18px;
+  overflow-y: auto;
 }
 
 .companion-message {
   display: grid;
-  grid-template-columns: 30px minmax(0, 692px);
+  grid-template-columns: 30px minmax(0, 1fr);
   gap: 12px;
+  max-width: 100%;
 }
 
 .message-stack {
@@ -82,6 +88,7 @@
 }
 
 .assistant-bubble {
+  max-width: min(100%, 980px);
   padding: 14px 16px;
   border-radius: 12px;
   background: #f4f1ee;
@@ -95,6 +102,7 @@
   flex-direction: column;
   gap: 8px;
   margin-top: 12px;
+  max-width: min(100%, 980px);
 }
 
 .companion-insight {
@@ -147,6 +155,28 @@
 .companion-composer {
   padding: 12px 18px;
   border-top: 1px solid var(--color-border);
+}
+
+.suggested-prompts {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.suggested-prompts button {
+  min-height: 30px;
+  padding: 0 12px;
+  border: 1px solid #ead6df;
+  border-radius: var(--radius-pill);
+  background: #fff7f9;
+  color: var(--maroon-700);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.suggested-prompts button:hover {
+  background: #f7e4eb;
 }
 
 .composer-row {
