@@ -25,10 +25,14 @@
       </div>
     </header>
 
+    <input type="radio" name="report-view" id="report-overview" class="report-tab-radio" checked>
+    <input type="radio" name="report-view" id="report-department" class="report-tab-radio">
+    <input type="radio" name="report-view" id="report-trends" class="report-tab-radio">
+
     <nav class="report-tabs" aria-label="Report views">
-      <button type="button" class="is-active">Overview</button>
-      <button type="button">By Department</button>
-      <button type="button">Trends</button>
+      <label for="report-overview">Overview</label>
+      <label for="report-department">By Department</label>
+      <label for="report-trends">Trends</label>
     </nav>
 
     <section class="insight-panel">
@@ -47,68 +51,123 @@
       </div>
     </section>
 
-    <section class="report-kpi-grid" aria-label="Report metrics">
-      {% for kpi in kpis %}
-        <article class="report-kpi-card">
-          <strong>{{ kpi.value }}</strong>
-          <span>{{ kpi.label }}</span>
-          <em class="tone-{{ kpi.tone }}">{{ kpi.delta }}</em>
-        </article>
-      {% endfor %}
-    </section>
+    <div class="report-tab-panels">
+      <section class="report-panel overview-panel">
+        <section class="report-kpi-grid" aria-label="Report metrics">
+          {% for kpi in kpis %}
+            <article class="report-kpi-card">
+              <strong>{{ kpi.value }}</strong>
+              <span>{{ kpi.label }}</span>
+              <em class="tone-{{ kpi.tone }}">{{ kpi.delta }}</em>
+            </article>
+          {% endfor %}
+        </section>
 
-    <section class="report-chart-grid">
-      <article class="report-chart-card">
-        <div class="chart-head">
-          <h2>Area Readiness Radar</h2>
-          <p>Level I - All 11 Areas</p>
-        </div>
+        <section class="report-chart-grid">
+          <article class="report-chart-card">
+            <div class="chart-head">
+              <h2>Area Readiness Radar</h2>
+              <p>Level I - All 11 Areas</p>
+            </div>
 
-        <div class="radar-chart" aria-label="Area readiness radar chart">
-          <svg viewBox="0 0 260 240" role="img">
-            <g class="radar-grid">
-              <polygon points="130,20 207,50 240,125 185,205 75,205 20,125 53,50"></polygon>
-              <polygon points="130,54 184,75 207,128 169,184 91,184 53,128 76,75"></polygon>
-              <polygon points="130,88 161,100 174,130 152,162 108,162 86,130 99,100"></polygon>
-              <line x1="130" y1="20" x2="130" y2="205"></line>
-              <line x1="207" y1="50" x2="75" y2="205"></line>
-              <line x1="240" y1="125" x2="20" y2="125"></line>
-              <line x1="185" y1="205" x2="53" y2="50"></line>
-            </g>
-            <polygon class="radar-fill" points="{{ radar_points }}"></polygon>
-            <polyline class="radar-line" points="{{ radar_points }} 145,20"></polyline>
-          </svg>
-        </div>
-      </article>
+            <div class="radar-chart" aria-label="Area readiness radar chart">
+              <svg viewBox="0 0 260 240" role="img">
+                <g class="radar-grid">
+                  <polygon points="130,20 207,50 240,125 185,205 75,205 20,125 53,50"></polygon>
+                  <polygon points="130,54 184,75 207,128 169,184 91,184 53,128 76,75"></polygon>
+                  <polygon points="130,88 161,100 174,130 152,162 108,162 86,130 99,100"></polygon>
+                  <line x1="130" y1="20" x2="130" y2="205"></line>
+                  <line x1="207" y1="50" x2="75" y2="205"></line>
+                  <line x1="240" y1="125" x2="20" y2="125"></line>
+                  <line x1="185" y1="205" x2="53" y2="50"></line>
+                </g>
+                <polygon class="radar-fill" points="{{ radar_points }}"></polygon>
+                <polyline class="radar-line" points="{{ radar_points }} 145,20"></polyline>
+              </svg>
+            </div>
+          </article>
 
-      <article class="report-chart-card">
-        <div class="chart-head">
-          <h2>Revision vs. Approval Trend</h2>
-          <p>June - July 2026</p>
-        </div>
+          <article class="report-chart-card">
+            <div class="chart-head">
+              <h2>Revision vs. Approval Trend</h2>
+              <p>June - July 2026</p>
+            </div>
 
-        <div class="line-chart" aria-label="Revision versus approval trend chart">
-          <svg viewBox="0 0 520 260" role="img">
-            <g class="line-grid">
-              <line x1="30" y1="40" x2="500" y2="40"></line>
-              <line x1="30" y1="100" x2="500" y2="100"></line>
-              <line x1="30" y1="160" x2="500" y2="160"></line>
-              <line x1="30" y1="220" x2="500" y2="220"></line>
-              <line x1="30" y1="40" x2="30" y2="220"></line>
-              <line x1="125" y1="40" x2="125" y2="220"></line>
-              <line x1="220" y1="40" x2="220" y2="220"></line>
-              <line x1="315" y1="40" x2="315" y2="220"></line>
-              <line x1="410" y1="40" x2="410" y2="220"></line>
-            </g>
-            <polyline class="approval-line" points="{{ trend_approval_points }}"></polyline>
-            <polyline class="revision-line" points="{{ trend_revision_points }}"></polyline>
-          </svg>
-          <div class="chart-legend">
-            <span class="approval">Approvals</span>
-            <span class="revision">Revisions</span>
+            <div class="line-chart" aria-label="Revision versus approval trend chart">
+              {% include 'intelligence/partials/_trend_chart.html' %}
+            </div>
+          </article>
+        </section>
+      </section>
+
+      <section class="report-panel department-panel">
+        <article class="report-chart-card department-chart-card">
+          <div class="chart-head">
+            <h2>Compliance by Department</h2>
           </div>
-        </div>
-      </article>
-    </section>
+
+          <div class="department-chart" aria-label="Compliance by department chart">
+            <div class="department-y-axis">
+              <span>100%</span>
+              <span>75%</span>
+              <span>50%</span>
+              <span>25%</span>
+              <span>0%</span>
+            </div>
+            <div class="department-bars">
+              {% for department in departments %}
+                <div class="department-bar-item">
+                  <span class="bar tone-{{ department.tone }}" style="height: {{ department.compliance }}%;"></span>
+                  <em>{{ department.name }}</em>
+                </div>
+              {% endfor %}
+            </div>
+          </div>
+        </article>
+
+        <section class="department-table-card">
+          <table>
+            <thead>
+              <tr>
+                <th>Department</th>
+                <th>Submitted</th>
+                <th>Compiled</th>
+                <th>Compliance Rate</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for department in departments %}
+                <tr>
+                  <td><strong>{{ department.name }}</strong></td>
+                  <td>{{ department.submitted }}</td>
+                  <td>{{ department.compiled }}</td>
+                  <td>
+                    <div class="compliance-cell">
+                      <span><i class="tone-{{ department.tone }}" style="width: {{ department.compliance }}%;"></i></span>
+                      <strong>{{ department.compliance }}%</strong>
+                    </div>
+                  </td>
+                  <td><em class="department-status tone-{{ department.tone }}">{{ department.status }}</em></td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </section>
+      </section>
+
+      <section class="report-panel trends-panel">
+        <article class="report-chart-card trends-chart-card">
+          <div class="chart-head">
+            <h2>Weekly Submission Trend</h2>
+            <p>Revision rate declining - approval rate improving steadily</p>
+          </div>
+
+          <div class="line-chart is-large" aria-label="Weekly submission trend chart">
+            {% include 'intelligence/partials/_trend_chart.html' %}
+          </div>
+        </article>
+      </section>
+    </div>
   </div>
 {% endblock %}
