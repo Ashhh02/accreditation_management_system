@@ -1,4 +1,114 @@
 {% extends 'base.html' %}
+{% load static nav_extras %}
+
+{% block extra_css %}
+  <link rel="stylesheet" href="{% static 'css/reports_monitoring.css' %}">
+{% endblock %}
+
 {% block content %}
-  {% include 'partials/_placeholder.html' with icon_name='chart' %}
+  <div class="reports-page">
+    <div class="reports-breadcrumb">
+      <span>Intelligence</span>
+      <span>/</span>
+      <strong>Reports & Monitoring</strong>
+    </div>
+
+    <header class="reports-header">
+      <div>
+        <h1>Reports & Monitoring</h1>
+        <p>Academic Year 2025-2026 · PACUCOA Accreditation Cycle · As of Jul 14, 2026</p>
+      </div>
+
+      <div class="report-actions">
+        <button type="button" class="print-btn">Print</button>
+        <button type="button" class="export-btn">Export PDF</button>
+      </div>
+    </header>
+
+    <nav class="report-tabs" aria-label="Report views">
+      <button type="button" class="is-active">Overview</button>
+      <button type="button">By Department</button>
+      <button type="button">Trends</button>
+    </nav>
+
+    <section class="insight-panel">
+      <div class="insight-head">
+        <h2>{% icon 'bolt' %} AI-Generated Insights</h2>
+        <span>Advisory Only</span>
+      </div>
+
+      <div class="insight-grid">
+        {% for insight in insights %}
+          <article class="insight-card tone-{{ insight.tone }}">
+            {% icon insight.icon %}
+            <p>{{ insight.message }}</p>
+          </article>
+        {% endfor %}
+      </div>
+    </section>
+
+    <section class="report-kpi-grid" aria-label="Report metrics">
+      {% for kpi in kpis %}
+        <article class="report-kpi-card">
+          <strong>{{ kpi.value }}</strong>
+          <span>{{ kpi.label }}</span>
+          <em class="tone-{{ kpi.tone }}">{{ kpi.delta }}</em>
+        </article>
+      {% endfor %}
+    </section>
+
+    <section class="report-chart-grid">
+      <article class="report-chart-card">
+        <div class="chart-head">
+          <h2>Area Readiness Radar</h2>
+          <p>Level I - All 11 Areas</p>
+        </div>
+
+        <div class="radar-chart" aria-label="Area readiness radar chart">
+          <svg viewBox="0 0 260 240" role="img">
+            <g class="radar-grid">
+              <polygon points="130,20 207,50 240,125 185,205 75,205 20,125 53,50"></polygon>
+              <polygon points="130,54 184,75 207,128 169,184 91,184 53,128 76,75"></polygon>
+              <polygon points="130,88 161,100 174,130 152,162 108,162 86,130 99,100"></polygon>
+              <line x1="130" y1="20" x2="130" y2="205"></line>
+              <line x1="207" y1="50" x2="75" y2="205"></line>
+              <line x1="240" y1="125" x2="20" y2="125"></line>
+              <line x1="185" y1="205" x2="53" y2="50"></line>
+            </g>
+            <polygon class="radar-fill" points="{{ radar_points }}"></polygon>
+            <polyline class="radar-line" points="{{ radar_points }} 145,20"></polyline>
+          </svg>
+        </div>
+      </article>
+
+      <article class="report-chart-card">
+        <div class="chart-head">
+          <h2>Revision vs. Approval Trend</h2>
+          <p>June - July 2026</p>
+        </div>
+
+        <div class="line-chart" aria-label="Revision versus approval trend chart">
+          <svg viewBox="0 0 520 260" role="img">
+            <g class="line-grid">
+              <line x1="30" y1="40" x2="500" y2="40"></line>
+              <line x1="30" y1="100" x2="500" y2="100"></line>
+              <line x1="30" y1="160" x2="500" y2="160"></line>
+              <line x1="30" y1="220" x2="500" y2="220"></line>
+              <line x1="30" y1="40" x2="30" y2="220"></line>
+              <line x1="125" y1="40" x2="125" y2="220"></line>
+              <line x1="220" y1="40" x2="220" y2="220"></line>
+              <line x1="315" y1="40" x2="315" y2="220"></line>
+              <line x1="410" y1="40" x2="410" y2="220"></line>
+            </g>
+            <polyline class="approval-line" points="{{ trend_approval_points }}"></polyline>
+            <polyline class="revision-line" points="{{ trend_revision_points }}"></polyline>
+          </svg>
+          <div class="chart-legend">
+            <span class="approval">Approvals</span>
+            <span class="revision">Revisions</span>
+          </div>
+        </div>
+      </article>
+    </section>
+  </div>
 {% endblock %}
