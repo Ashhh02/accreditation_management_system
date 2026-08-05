@@ -1,4 +1,112 @@
 {% extends 'base.html' %}
+{% load static nav_extras %}
+
+{% block extra_css %}
+  <link rel="stylesheet" href="{% static 'css/levels_areas.css' %}">
+{% endblock %}
+
 {% block content %}
-  {% include 'partials/_placeholder.html' with icon_name='layers' %}
+  <div class="levels-page">
+    <div class="levels-breadcrumb">
+      <span>Accreditation</span>
+      <span>/</span>
+      <strong>Levels & Areas</strong>
+    </div>
+
+    <header class="levels-header">
+      <h1>Accreditation Overview</h1>
+      <p>PACUCOA Levels I-IV · Academic Year 2025-2026</p>
+    </header>
+
+    <section class="level-grid" aria-label="Accreditation levels">
+      {% for level in levels %}
+        <article class="level-card{% if level.active %} is-active{% endif %}">
+          <h2>{{ level.name }}</h2>
+          <p>{{ level.status }}</p>
+          <div class="level-tags">
+            <span class="status-pill tone-green">{{ level.compiled }} Compiled</span>
+            {% if level.pending %}
+              <span class="status-pill tone-gold">{{ level.pending }} Pending</span>
+            {% endif %}
+            {% if level.revision %}
+              <span class="status-pill tone-rose">{{ level.revision }} Revision</span>
+            {% endif %}
+          </div>
+        </article>
+      {% endfor %}
+    </section>
+
+    <section class="level-summary">
+      <div class="level-summary-copy">
+        <h2>{{ active_level.name }}</h2>
+        <p>{{ active_level.status }} · 11 Areas</p>
+      </div>
+      <div class="level-summary-line"></div>
+      <div class="level-summary-stats">
+        <div>
+          <strong class="tone-green">{{ overview.compiled }}</strong>
+          <span>Compiled</span>
+        </div>
+        <div>
+          <strong class="tone-gold">{{ overview.pending }}</strong>
+          <span>Pending</span>
+        </div>
+        <div>
+          <strong class="tone-rose">{{ overview.revision }}</strong>
+          <span>Revision</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="area-toolbar" aria-label="Area filters">
+      <label class="area-search">
+        {% icon 'search' %}
+        <input type="search" placeholder="Search areas...">
+      </label>
+
+      <div class="area-filter-icon">{% icon 'settings' %}</div>
+
+      <select aria-label="Filter by department">
+        <option>All Departments</option>
+      </select>
+
+      <select aria-label="Filter by status">
+        <option>All Status</option>
+      </select>
+    </section>
+
+    <section class="area-grid" aria-label="Accreditation areas">
+      {% for area in areas %}
+        <article class="area-card">
+          <div class="area-card-head">
+            <div>
+              <div class="area-code">{{ area.code }}</div>
+              <h2>{{ area.name }}</h2>
+            </div>
+            {% icon 'chevron-right' 'area-chevron' %}
+          </div>
+
+          <div class="area-progress-row">
+            <div class="area-progress">
+              <span class="tone-{{ area.tone }}" style="width: {{ area.progress }}%;"></span>
+            </div>
+            <strong class="area-percent tone-{{ area.tone }}">{{ area.progress }}%</strong>
+          </div>
+
+          <div class="area-tags">
+            <span class="status-pill tone-green">{{ area.compiled }} Compiled</span>
+            {% if area.pending %}
+              <span class="status-pill tone-gold">{{ area.pending }} Pending</span>
+            {% endif %}
+            {% if area.revision %}
+              <span class="status-pill tone-rose">{{ area.revision }} Revision</span>
+            {% endif %}
+            {% if area.missing %}
+              <span class="status-pill tone-slate">{{ area.missing }} Missing</span>
+            {% endif %}
+          </div>
+        </article>
+      {% endfor %}
+    </section>
+  </div>
 {% endblock %}
