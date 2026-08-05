@@ -1,4 +1,91 @@
 {% extends 'base.html' %}
+{% load static nav_extras %}
+
+{% block extra_css %}
+  <link rel="stylesheet" href="{% static 'css/review_workflow.css' %}">
+{% endblock %}
+
 {% block content %}
-  {% include 'partials/_placeholder.html' with icon_name='clipboard' %}
+  <div class="review-page">
+    <div class="review-breadcrumb">
+      <span>Accreditation</span>
+      <span>/</span>
+      <strong>Review Workflow</strong>
+    </div>
+
+    <header class="review-header">
+      <h1>Review Workflow</h1>
+      <p>Manage evidence submissions and review actions</p>
+    </header>
+
+    <section class="review-stat-grid" aria-label="Review status summary">
+      {% for stat in review_stats %}
+        <article class="review-stat-card">
+          <strong class="tone-{{ stat.tone }}">{{ stat.value }}</strong>
+          <span>{{ stat.label }}</span>
+        </article>
+      {% endfor %}
+    </section>
+
+    <section class="review-toolbar" aria-label="Submission filters">
+      <label class="review-search">
+        {% icon 'search' %}
+        <input type="search" placeholder="Search submissions...">
+      </label>
+
+      <div class="review-filter-tabs">
+        <button type="button" class="is-active">All</button>
+        <button type="button">Pending</button>
+        <button type="button">Revision</button>
+        <button type="button">Compiled</button>
+      </div>
+    </section>
+
+    <section class="review-table-card">
+      <div class="review-table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Evidence</th>
+              <th>Department</th>
+              <th>Area</th>
+              <th>Submitted By</th>
+              <th>Status</th>
+              <th>Reviewer</th>
+              <th>Date</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in submissions %}
+              <tr>
+                <td>
+                  <strong>{{ item.evidence }}</strong>
+                  <span>{{ item.code }}</span>
+                </td>
+                <td>{{ item.department }}</td>
+                <td>{{ item.area }}</td>
+                <td>{{ item.submitted_by }}</td>
+                <td><span class="review-status tone-{{ item.tone }}">{{ item.status }}</span></td>
+                <td>{{ item.reviewer }}</td>
+                <td class="review-date">{{ item.date }}</td>
+                <td>
+                  <button type="button" class="review-btn">{% icon 'search' %} Review</button>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <footer class="review-table-footer">
+        <span>Showing {{ submission_count }} of {{ submission_count }} submissions</span>
+        <div class="review-pagination">
+          <button type="button" class="is-active">1</button>
+          <button type="button">2</button>
+          <button type="button">3</button>
+        </div>
+      </footer>
+    </section>
+  </div>
 {% endblock %}

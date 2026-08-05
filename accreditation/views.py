@@ -208,4 +208,87 @@ class SubmissionWorkspaceView(TemplateView):
 
 class ReviewWorkflowView(TemplateView):
     template_name = 'accreditation/review_workflow.html'
-    extra_context = {'page_title': 'Review Workflow'}
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        submissions = [
+            {
+                'evidence': 'Philosophy & Objectives Evidence',
+                'code': 'LVL1-I-001',
+                'department': 'College of Engineering',
+                'area': 'Area I',
+                'submitted_by': 'Prof. J. Reyes',
+                'status': 'Pending Review',
+                'tone': 'gold',
+                'reviewer': 'Dr. A. Villanueva',
+                'date': 'Jul 14, 2026',
+            },
+            {
+                'evidence': 'Faculty Credentials - Teaching Load',
+                'code': 'LVL1-II-003',
+                'department': 'College of Business',
+                'area': 'Area II',
+                'submitted_by': 'Dr. P. Gomez',
+                'status': 'Needs Revision',
+                'tone': 'rose',
+                'reviewer': 'Dr. M. Santos',
+                'date': 'Jul 13, 2026',
+            },
+            {
+                'evidence': 'Instructional Methods Manual',
+                'code': 'LVL1-III-002',
+                'department': 'College of Education',
+                'area': 'Area III',
+                'submitted_by': 'Prof. L. Torres',
+                'status': 'Compiled',
+                'tone': 'green',
+                'reviewer': 'Dr. E. Cruz',
+                'date': 'Jul 12, 2026',
+            },
+            {
+                'evidence': 'Laboratory Facilities Assessment',
+                'code': 'LVL1-IV-001',
+                'department': 'College of Engineering',
+                'area': 'Area IV',
+                'submitted_by': 'Engr. R. Santos',
+                'status': 'Pending Review',
+                'tone': 'gold',
+                'reviewer': 'Unassigned',
+                'date': 'Jul 11, 2026',
+            },
+            {
+                'evidence': 'Research Output Compilation',
+                'code': 'LVL1-V-001',
+                'department': 'College of Nursing',
+                'area': 'Area V',
+                'submitted_by': 'Dr. C. Bautista',
+                'status': 'Compiled',
+                'tone': 'green',
+                'reviewer': 'Dr. A. Villanueva',
+                'date': 'Jul 10, 2026',
+            },
+            {
+                'evidence': 'Library Resources Inventory',
+                'code': 'LVL1-VI-001',
+                'department': 'College of Business',
+                'area': 'Area VI',
+                'submitted_by': 'Ms. F. Lim',
+                'status': 'Needs Revision',
+                'tone': 'rose',
+                'reviewer': 'Dr. M. Santos',
+                'date': 'Jul 9, 2026',
+            },
+        ]
+        context.update(
+            {
+                'page_title': 'Review Workflow',
+                'review_stats': [
+                    {'label': 'Pending Review', 'value': 2, 'tone': 'gold'},
+                    {'label': 'Needs Revision', 'value': 2, 'tone': 'rose'},
+                    {'label': 'Compiled', 'value': 2, 'tone': 'green'},
+                ],
+                'submissions': submissions,
+                'submission_count': len(submissions),
+            }
+        )
+        return context
