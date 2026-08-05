@@ -5,38 +5,6 @@
   <link rel="stylesheet" href="{% static 'css/notifications.css' %}">
 {% endblock %}
 
-{% block page_topbar %}
-  <header class="notification-pagebar">
-    <div class="notification-pagebar-title">Notifications</div>
-
-    <div class="notification-pagebar-actions">
-      <label class="notification-search">
-        {% icon 'search' %}
-        <input type="search" placeholder="Search submissions...">
-      </label>
-
-      <a href="{% url 'core:notifications' %}" class="notification-icon-btn" aria-label="Notifications">
-        {% icon 'bell' %}
-        <span class="notification-count">{{ notification_count }}</span>
-      </a>
-
-      <button type="button" class="notification-role-btn">
-        Switch Role
-        {% icon 'chevron-down' %}
-      </button>
-
-      <div class="notification-user-chip">
-        <div class="avatar-chip">{{ current_user_summary.initials }}</div>
-        <div>
-          <div class="notification-user-name">{{ current_user_summary.name }}</div>
-          <div class="notification-user-role">{{ current_user_summary.role_context }}</div>
-        </div>
-        {% icon 'chevron-down' %}
-      </div>
-    </div>
-  </header>
-{% endblock %}
-
 {% block content %}
   <div class="notifications-top">
     <div class="content-header notifications-header">
