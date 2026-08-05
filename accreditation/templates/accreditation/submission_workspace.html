@@ -1,4 +1,127 @@
 {% extends 'base.html' %}
+{% load static nav_extras %}
+
+{% block extra_css %}
+  <link rel="stylesheet" href="{% static 'css/submission_workspace.css' %}">
+{% endblock %}
+
 {% block content %}
-  {% include 'partials/_placeholder.html' with icon_name='folder' %}
+  <div class="workspace-page">
+    <div class="workspace-breadcrumb">
+      <span>Accreditation</span>
+      <span>/</span>
+      <strong>Submission Workspace</strong>
+    </div>
+
+    <div class="workspace-trail">
+      <span>Level I</span>
+      <span>{% icon 'chevron-right' 'trail-icon' %}</span>
+      <span>Area III</span>
+      <span>{% icon 'chevron-right' 'trail-icon' %}</span>
+      <strong>Instruction</strong>
+    </div>
+
+    <header class="workspace-header">
+      <h1>Area III - Instruction</h1>
+      <p>College of Engineering · Program Head: Prof. Juan Reyes</p>
+    </header>
+
+    <section class="workspace-layout">
+      <aside class="subarea-panel">
+        <div class="subarea-title">Sub-Areas</div>
+        <div class="subarea-list">
+          {% for item in sub_areas %}
+            <button type="button" class="subarea-item{% if item.active %} is-active{% endif %}">
+              <strong>{{ item.code }}</strong>
+              <span>{{ item.title }}</span>
+              <em class="status-pill tone-{{ item.tone }}">{{ item.status }}</em>
+            </button>
+          {% endfor %}
+        </div>
+      </aside>
+
+      <main class="workspace-main">
+        <section class="workspace-card situation-card">
+          <div class="situation-head">
+            <div>
+              <h2>III.1 Curriculum Design</h2>
+              <p>4 evidence requirements</p>
+            </div>
+            <span class="completion-pill">{% icon 'check' %} Completed</span>
+          </div>
+
+          <div class="score-block">
+            <div class="section-label">Self-Evaluation Score</div>
+            <div class="score-row">
+              {% for score in "12345" %}
+                <button type="button" class="score-btn{% if score == '4' %} is-active{% endif %}">{{ score }}</button>
+              {% endfor %}
+              <span>Very Satisfactory</span>
+            </div>
+          </div>
+
+          <div class="actual-block">
+            <div class="section-label">Actual Situation</div>
+            <div class="actual-text">
+              The department employs a variety of instructional methods including lecture-discussion, problem-based learning, and collaborative group activities. Faculty members are encouraged to use technology-enhanced instruction through the institution's LMS platform.
+            </div>
+          </div>
+        </section>
+
+        <section class="workspace-card documents-card">
+          <div class="documents-head">
+            <h2>Evidence Documents</h2>
+            <button type="button" class="add-document-btn">+ Add Document</button>
+          </div>
+
+          <div class="upload-box">
+            {% icon 'cloud' 'upload-icon' %}
+            <strong>Drop files here or click to upload</strong>
+            <span>PDF, DOCX, XLSX up to 25MB</span>
+          </div>
+
+          <div class="document-list">
+            {% for document in documents %}
+              <article class="document-item">
+                {% icon 'file' %}
+                <div>
+                  <h3>{{ document.name }}</h3>
+                  <p>{{ document.meta }}</p>
+                </div>
+                <span>{{ document.version }}</span>
+              </article>
+            {% endfor %}
+          </div>
+        </section>
+      </main>
+
+      <aside class="workspace-side">
+        <section class="workspace-card remarks-card">
+          <h2>{% icon 'message' %} Reviewer Remarks</h2>
+          <div class="remarks-list">
+            {% for remark in remarks %}
+              <article class="remark-item tone-{{ remark.tone }}">
+                <h3>{{ remark.author }} · {{ remark.date }}</h3>
+                <p>{{ remark.message }}</p>
+              </article>
+            {% endfor %}
+          </div>
+        </section>
+
+        <section class="workspace-card missing-card">
+          <h2>{% icon 'alert' %} Missing Requirements</h2>
+          <ul>
+            {% for item in missing_requirements %}
+              <li>{{ item }}</li>
+            {% endfor %}
+          </ul>
+        </section>
+
+        <section class="workspace-card version-card">
+          <h2>{% icon 'clock' %} Version History</h2>
+          {% icon 'chevron-down' %}
+        </section>
+      </aside>
+    </section>
+  </div>
 {% endblock %}

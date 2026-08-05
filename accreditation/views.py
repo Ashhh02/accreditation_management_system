@@ -120,7 +120,90 @@ class LevelsAreasView(TemplateView):
 
 class SubmissionWorkspaceView(TemplateView):
     template_name = 'accreditation/submission_workspace.html'
-    extra_context = {'page_title': 'Submission Workspace'}
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        sub_areas = [
+            {
+                'code': 'III-1',
+                'title': 'III.1 Curriculum Design',
+                'status': 'Completed',
+                'tone': 'green',
+                'active': True,
+            },
+            {
+                'code': 'III-2',
+                'title': 'III.2 Instructional Methods',
+                'status': 'Pending',
+                'tone': 'gold',
+                'active': False,
+            },
+            {
+                'code': 'III-3',
+                'title': 'III.3 Assessment & Evaluation',
+                'status': 'Needs Revision',
+                'tone': 'rose',
+                'active': False,
+            },
+            {
+                'code': 'III-4',
+                'title': 'III.4 Student Performance Monitoring',
+                'status': 'Pending',
+                'tone': 'gold',
+                'active': False,
+            },
+            {
+                'code': 'III-5',
+                'title': 'III.5 Faculty-Student Interaction',
+                'status': 'Missing',
+                'tone': 'slate',
+                'active': False,
+            },
+        ]
+        documents = [
+            {
+                'name': 'Updated_Syllabi_2025-2026.pdf',
+                'meta': '2.4 MB · v3 · Uploaded Jul 14',
+                'version': 'v3',
+            },
+            {
+                'name': 'Instructional_Methods_Manual.docx',
+                'meta': '1.1 MB · v2 · Uploaded Jul 10',
+                'version': 'v2',
+            },
+            {
+                'name': 'Assessment_Framework.pdf',
+                'meta': '3.7 MB · v1 · Uploaded Jul 5',
+                'version': 'v1',
+            },
+        ]
+        remarks = [
+            {
+                'author': 'Dr. A. Villanueva',
+                'date': 'Jul 12, 2026',
+                'message': 'Please provide updated syllabi for all subjects taught in AY 2025-2026. Current documents are from 2023.',
+                'tone': 'rose',
+            },
+            {
+                'author': 'Dr. M. Santos',
+                'date': 'Jul 8, 2026',
+                'message': 'Instructional methods documentation is comprehensive. Approved for this subarea.',
+                'tone': 'green',
+            },
+        ]
+        context.update(
+            {
+                'page_title': 'Submission Workspace',
+                'sub_areas': sub_areas,
+                'documents': documents,
+                'remarks': remarks,
+                'missing_requirements': [
+                    'Updated AY 2025-26 syllabi for all courses',
+                    'Faculty instructional portfolio samples',
+                ],
+            }
+        )
+        return context
 
 
 class ReviewWorkflowView(TemplateView):
