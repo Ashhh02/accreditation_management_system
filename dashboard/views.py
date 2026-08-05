@@ -1,5 +1,4 @@
 from django.views.generic import TemplateView
-from django.utils import timezone
 
 from .charting import build_line_chart
 
@@ -34,18 +33,6 @@ class DashboardView(TemplateView):
                 'has a 45% readiness gap with 20 days until the preliminary '
                 'deadline. 3 departments are missing critical supporting '
                 'documents. Immediate action recommended.'
-            ),
-        }
-
-        today = timezone.localdate()
-        context['ai_support'] = {
-            'date_label': today.strftime('%A, %B %d').upper(),
-            'greeting': 'Good evening, Charles!',
-            'name': 'MARIA',
-            'message': (
-                'Area VIII needs attention. Readiness remains below target, '
-                'with 3 departments still missing supporting documents before '
-                'the August 23, 2026 checkpoint.'
             ),
         }
 
@@ -161,6 +148,13 @@ class DashboardView(TemplateView):
                 'date_label': 'Sep 4, 2026',
                 'urgent': False,
             },
+        ]
+
+        context['quick_actions'] = [
+            'Submit Evidence',
+            'Review Queue',
+            'Upload Document',
+            'View Reports',
         ]
 
         return context
