@@ -100,4 +100,102 @@ class DocumentRepositoryView(TemplateView):
 
 class CommunicationView(TemplateView):
     template_name = 'resources/communication.html'
-    extra_context = {'page_title': 'Communication'}
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        conversations = [
+            {
+                'initials': 'AV',
+                'name': 'Dr. A. Villanueva',
+                'context': 'QA Office',
+                'preview': 'Please resubmit Area II with updated credentials...',
+                'time': '10:22 AM',
+                'unread': 2,
+                'active': True,
+                'online': True,
+                'pinned': True,
+            },
+            {
+                'initials': 'JR',
+                'name': 'Prof. J. Reyes',
+                'context': 'College of Engineering',
+                'preview': 'I have uploaded the revised syllabi for review.',
+                'time': '9:45 AM',
+                'unread': 0,
+                'active': False,
+                'online': True,
+                'pinned': False,
+            },
+            {
+                'initials': 'A3',
+                'name': 'Area III Review Team',
+                'context': 'Group · 5 members',
+                'preview': 'Dr. Cruz: The assessment framework looks complete.',
+                'time': 'Yesterday',
+                'unread': 5,
+                'active': False,
+                'online': False,
+                'pinned': False,
+            },
+            {
+                'initials': 'EC',
+                'name': 'Dr. E. Cruz',
+                'context': 'College of Business (Dean)',
+                'preview': "Approved the Dean's review for Area V.",
+                'time': 'Yesterday',
+                'unread': 0,
+                'active': False,
+                'online': False,
+                'pinned': False,
+            },
+            {
+                'initials': 'EX',
+                'name': 'External Review Panel',
+                'context': 'Group · 3 members',
+                'preview': 'SYSTEM: External review window opens next week.',
+                'time': 'Jul 12',
+                'unread': 0,
+                'active': False,
+                'online': False,
+                'pinned': False,
+            },
+        ]
+        messages = [
+            {
+                'author': 'Dr. A. Villanueva',
+                'initials': 'AV',
+                'text': 'Good morning, Prof. Reyes. I reviewed your Area II submission and found that the faculty credentials need to be updated for AY 2025-2026.',
+                'time': '9:30 AM',
+                'mine': False,
+            },
+            {
+                'author': 'You',
+                'initials': 'MS',
+                'text': 'Good morning, Dr. Villanueva. Thank you for the feedback. I will gather the updated credentials from all faculty members.',
+                'time': '9:35 AM',
+                'mine': True,
+            },
+            {
+                'author': 'Dr. A. Villanueva',
+                'initials': 'AV',
+                'text': 'Please prioritize the full-time faculty. Also ensure that Special Professional Licenses are included. The deadline is July 25.',
+                'time': '9:42 AM',
+                'mine': False,
+            },
+            {
+                'author': 'You',
+                'initials': 'MS',
+                'text': 'Understood. I will compile everything and submit by July 20 to give enough buffer for review.',
+                'time': '9:48 AM',
+                'mine': True,
+            },
+        ]
+        context.update(
+            {
+                'page_title': 'Communication',
+                'conversations': conversations,
+                'messages': messages,
+                'active_conversation': conversations[0],
+            }
+        )
+        return context

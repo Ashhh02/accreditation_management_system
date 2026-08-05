@@ -1,4 +1,101 @@
 {% extends 'base.html' %}
+{% load static nav_extras %}
+
+{% block extra_css %}
+  <link rel="stylesheet" href="{% static 'css/communication.css' %}">
+{% endblock %}
+
 {% block content %}
-  {% include 'partials/_placeholder.html' with icon_name='message' %}
+  <div class="communication-page">
+    <div class="communication-breadcrumb">
+      <span>Resources</span>
+      <span>/</span>
+      <strong>Communication</strong>
+    </div>
+
+    <header class="communication-header">
+      <h1>Communication</h1>
+      <p>Internal accreditation collaboration</p>
+    </header>
+
+    <section class="chat-shell">
+      <aside class="conversation-panel">
+        <div class="conversation-search">
+          {% icon 'search' %}
+          <input type="search" placeholder="Search conversations...">
+        </div>
+
+        <div class="pinned-label">Pinned</div>
+
+        <div class="conversation-list">
+          {% for conversation in conversations %}
+            <button type="button" class="conversation-item{% if conversation.active %} is-active{% endif %}">
+              <span class="conversation-avatar{% if conversation.initials == 'A3' or conversation.initials == 'EX' %} is-gold{% endif %}">
+                {{ conversation.initials }}
+                {% if conversation.online %}<i></i>{% endif %}
+              </span>
+              <span class="conversation-copy">
+                <span class="conversation-line">
+                  <strong>{{ conversation.name }}</strong>
+                  <em>{{ conversation.time }}</em>
+                </span>
+                <span class="conversation-context">{{ conversation.context }}</span>
+                <span class="conversation-preview">{{ conversation.preview }}</span>
+              </span>
+              {% if conversation.unread %}
+                <span class="conversation-badge">{{ conversation.unread }}</span>
+              {% endif %}
+            </button>
+          {% endfor %}
+        </div>
+      </aside>
+
+      <main class="chat-main">
+        <header class="chat-thread-header">
+          <div class="thread-user">
+            <div class="thread-avatar">AV</div>
+            <div>
+              <h2>{{ active_conversation.name }}</h2>
+              <p>Online</p>
+            </div>
+          </div>
+
+          <div class="thread-actions">
+            <span>Linked: Area II Submission</span>
+            <button type="button" aria-label="Thread options">...</button>
+          </div>
+        </header>
+
+        <div class="pinned-note">
+          <strong>Pinned:</strong>
+          <span>"Please ensure SPLs are included. Deadline: July 25."</span>
+        </div>
+
+        <section class="message-list">
+          {% for message in messages %}
+            <article class="message-row{% if message.mine %} is-mine{% endif %}">
+              {% if not message.mine %}
+                <div class="message-author">{{ message.author }}</div>
+                <div class="message-wrap">
+                  <span class="message-avatar">{{ message.initials }}</span>
+                  <div>
+                    <div class="message-bubble">{{ message.text }}</div>
+                    <time>{{ message.time }}</time>
+                  </div>
+                </div>
+              {% else %}
+                <div class="message-bubble">{{ message.text }}</div>
+                <time>{{ message.time }}</time>
+              {% endif %}
+            </article>
+          {% endfor %}
+        </section>
+
+        <footer class="message-composer">
+          <input type="text" placeholder="Type a message...">
+          <button type="button" aria-label="Send message">{% icon 'chevron-right' %}</button>
+        </footer>
+      </main>
+    </section>
+  </div>
 {% endblock %}
