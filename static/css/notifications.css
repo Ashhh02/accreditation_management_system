@@ -22,15 +22,6 @@
   font-size: 15px;
 }
 
-.mark-read-btn {
-  min-height: 36px;
-  padding: 8px 16px;
-  background: var(--color-surface);
-  border-color: var(--color-border);
-  color: var(--color-text);
-  font-weight: 500;
-}
-
 .notification-shell {
   width: 100%;
 }
