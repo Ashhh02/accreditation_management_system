@@ -1,4 +1,85 @@
 {% extends 'base.html' %}
+{% load static nav_extras %}
+
+{% block extra_css %}
+  <link rel="stylesheet" href="{% static 'css/notifications.css' %}">
+{% endblock %}
+
+{% block page_topbar %}
+  <header class="notification-pagebar">
+    <div class="notification-pagebar-title">Notifications</div>
+
+    <div class="notification-pagebar-actions">
+      <label class="notification-search">
+        {% icon 'search' %}
+        <input type="search" placeholder="Search submissions...">
+      </label>
+
+      <a href="{% url 'core:notifications' %}" class="notification-icon-btn" aria-label="Notifications">
+        {% icon 'bell' %}
+        <span class="notification-count">{{ notification_count }}</span>
+      </a>
+
+      <button type="button" class="notification-role-btn">
+        Switch Role
+        {% icon 'chevron-down' %}
+      </button>
+
+      <div class="notification-user-chip">
+        <div class="avatar-chip">{{ current_user_summary.initials }}</div>
+        <div>
+          <div class="notification-user-name">{{ current_user_summary.name }}</div>
+          <div class="notification-user-role">{{ current_user_summary.role_context }}</div>
+        </div>
+        {% icon 'chevron-down' %}
+      </div>
+    </div>
+  </header>
+{% endblock %}
+
 {% block content %}
-  {% include 'partials/_placeholder.html' with icon_name='bell' %}
+  <div class="notifications-top">
+    <div class="content-header notifications-header">
+      <div>
+        <h1>{{ page_title }}</h1>
+        <p class="content-meta">{{ unread_total }} unread · {{ total_notifications }} total</p>
+      </div>
+
+      <button type="button" class="btn btn-outline mark-read-btn">Mark all read</button>
+    </div>
+
+    <div class="notification-filters">
+      <button type="button" class="filter-chip is-active">All</button>
+      <button type="button" class="filter-chip">Unread ({{ unread_total }})</button>
+    </div>
+  </div>
+
+  <section class="notification-shell">
+    <div class="notification-main">
+      <div class="notification-list-card">
+        {% for item in notifications %}
+          <article class="notification-row{% if item.unread %} is-unread{% endif %}">
+            <div class="notification-icon tone-{{ item.tone }}">
+              {% icon item.icon %}
+            </div>
+
+            <div class="notification-copy">
+              <div class="notification-topline">
+                <h2>{{ item.title }}</h2>
+                {% if item.unread %}
+                  <span class="notification-dot"></span>
+                {% endif %}
+              </div>
+              <p class="notification-message">{{ item.message }}</p>
+              <div class="notification-meta">
+                <span>{{ item.time_label }}</span>
+              </div>
+            </div>
+
+            <button type="button" class="notification-dismiss" aria-label="Dismiss notification">x</button>
+          </article>
+        {% endfor %}
+      </div>
+    </div>
+  </section>
 {% endblock %}

@@ -20,6 +20,8 @@
     {% include 'partials/_sidebar.html' %}
 
     <div class="main-column">
+      {% block page_topbar %}{% endblock %}
+
       <main class="content">
         {% block content %}{% endblock %}
       </main>
