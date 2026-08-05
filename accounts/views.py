@@ -116,4 +116,26 @@ class UserManagementView(TemplateView):
 
 class SettingsProfileView(TemplateView):
     template_name = 'accounts/settings_profile.html'
-    extra_context = {'page_title': 'Settings & Profile'}
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context.update(
+            {
+                'page_title': 'Settings & Profile',
+                'settings_tabs': [
+                    {'label': 'Profile', 'icon': 'users', 'active': True},
+                    {'label': 'Password', 'icon': 'settings', 'active': False},
+                    {'label': 'Notifications', 'icon': 'bell', 'active': False},
+                    {'label': 'Assistant', 'icon': 'sparkle', 'active': False},
+                ],
+                'profile': {
+                    'initials': 'MS',
+                    'name': 'Dr. Maria Santos',
+                    'office': 'Quality Assurance Office',
+                    'email': 'm.santos@jmcfi.edu.ph',
+                    'role': 'QA Administrator',
+                    'assignment': 'Assigned by Superadmin · Permanent',
+                },
+            }
+        )
+        return context

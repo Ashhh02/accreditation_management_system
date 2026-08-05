@@ -1,4 +1,75 @@
 {% extends 'base.html' %}
+{% load static nav_extras %}
+
+{% block extra_css %}
+  <link rel="stylesheet" href="{% static 'css/settings_profile.css' %}">
+{% endblock %}
+
 {% block content %}
-  {% include 'partials/_placeholder.html' with icon_name='settings' %}
+  <div class="settings-page">
+    <div class="settings-breadcrumb">
+      <span>Administration</span>
+      <span>/</span>
+      <strong>Settings & Profile</strong>
+    </div>
+
+    <header class="settings-header">
+      <h1>Settings & Profile</h1>
+      <p>Manage your account preferences and settings</p>
+    </header>
+
+    <section class="settings-layout">
+      <aside class="settings-tabs" aria-label="Settings sections">
+        {% for tab in settings_tabs %}
+          <button type="button" class="settings-tab{% if tab.active %} is-active{% endif %}">
+            {% icon tab.icon %}
+            <span>{{ tab.label }}</span>
+          </button>
+        {% endfor %}
+      </aside>
+
+      <form class="profile-card">
+        <h2>Personal Information</h2>
+
+        <div class="profile-hero">
+          <div class="profile-avatar">{{ profile.initials }}</div>
+          <div>
+            <h3>{{ profile.name }}</h3>
+            <p>{{ profile.office }}</p>
+            <button type="button">Change Photo</button>
+          </div>
+        </div>
+
+        <div class="field-grid">
+          <label>
+            <span>Full Name</span>
+            <input type="text" value="{{ profile.name }}">
+          </label>
+
+          <label>
+            <span>Email Address</span>
+            <input type="email" value="{{ profile.email }}">
+          </label>
+        </div>
+
+        <label class="full-field">
+          <span>Department / College</span>
+          <input type="text" value="{{ profile.office }}">
+        </label>
+
+        <section class="role-assignment">
+          <h3>Role Assignment</h3>
+          <div>
+            <span class="role-chip">{{ profile.role }}</span>
+            <p>{{ profile.assignment }}</p>
+          </div>
+        </section>
+
+        <button type="button" class="save-settings-btn">
+          {% icon 'file' %}
+          <span>Save Changes</span>
+        </button>
+      </form>
+    </section>
+  </div>
 {% endblock %}
