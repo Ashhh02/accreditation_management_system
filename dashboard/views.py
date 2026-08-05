@@ -163,11 +163,4 @@ class DashboardView(TemplateView):
             },
         ]
 
-        context['quick_actions'] = [
-            'Submit Evidence',
-            'Review Queue',
-            'Upload Document',
-            'View Reports',
-        ]
-
         return context

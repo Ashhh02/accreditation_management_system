@@ -2,7 +2,7 @@
 {% load static nav_extras %}
 
 {% block extra_css %}
-  <link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+  <link rel="stylesheet" href="{% static 'css/dashboard.css' %}?v={{ asset_version }}">
 {% endblock %}
 
 {% block content %}
@@ -156,15 +156,6 @@
             {% endif %}
           </div>
         {% endfor %}
-      </div>
-
-      <div class="quick-actions">
-        <div class="quick-actions-label">Quick Actions</div>
-        <div class="quick-actions-grid">
-          {% for action in quick_actions %}
-            <button type="button" class="quick-action-btn">{{ action }}</button>
-          {% endfor %}
-        </div>
       </div>
     </div>
   </section>

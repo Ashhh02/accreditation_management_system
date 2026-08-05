@@ -506,9 +506,7 @@
 }
 
 .quick-actions {
-  margin-top: 22px;
-  padding-top: 18px;
-  border-top: 1px solid var(--color-border);
+  display: none !important;
 }
 
 .quick-actions-label {
