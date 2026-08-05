@@ -89,4 +89,29 @@ class ReportsMonitoringView(TemplateView):
 
 class SmartCompanionView(TemplateView):
     template_name = 'intelligence/smart_companion.html'
-    extra_context = {'page_title': 'Smart Companion'}
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context.update(
+            {
+                'page_title': 'Smart Companion',
+                'companion_insights': [
+                    {
+                        'title': 'Critical Areas',
+                        'description': 'Area VII, Area VIII need immediate attention',
+                        'tone': 'rose',
+                    },
+                    {
+                        'title': 'Upcoming Deadline',
+                        'description': '20 days until Level I preliminary submission',
+                        'tone': 'gold',
+                    },
+                    {
+                        'title': 'Overall Readiness',
+                        'description': '74.3% - 5.2% improvement this week',
+                        'tone': 'green',
+                    },
+                ],
+            }
+        )
+        return context

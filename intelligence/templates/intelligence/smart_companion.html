@@ -1,4 +1,58 @@
 {% extends 'base.html' %}
+{% load static nav_extras %}
+
+{% block extra_css %}
+  <link rel="stylesheet" href="{% static 'css/smart_companion.css' %}">
+{% endblock %}
+
 {% block content %}
-  {% include 'partials/_placeholder.html' with icon_name='sparkle' %}
+  <div class="companion-page">
+    <header class="companion-header">
+      <h1>Smart Companion</h1>
+      <p>AI-assisted guidance for accreditation - advisory only</p>
+    </header>
+
+    <section class="companion-card">
+      <div class="companion-card-head">
+        <div class="companion-bot-icon">{% icon 'sparkle' %}</div>
+        <div>
+          <h2>JMCFI Accreditation Companion</h2>
+          <p>Advisory · Powered by AI · Not a substitute for official guidance</p>
+        </div>
+      </div>
+
+      <div class="companion-body">
+        <article class="companion-message">
+          <div class="companion-bot-icon">{% icon 'sparkle' %}</div>
+          <div class="message-stack">
+            <div class="assistant-bubble">
+              Hello! I'm your JMCFI Accreditation Smart Companion. I can help you understand requirements, identify gaps, track submissions, and provide guidance throughout the accreditation process. How can I assist you today?
+            </div>
+
+            <div class="insight-stack">
+              {% for insight in companion_insights %}
+                <div class="companion-insight">
+                  <span class="insight-dot tone-{{ insight.tone }}"></span>
+                  <div>
+                    <strong>{{ insight.title }}</strong>
+                    <p>{{ insight.description }}</p>
+                  </div>
+                </div>
+              {% endfor %}
+            </div>
+
+            <time>Companion · 10:00 AM</time>
+          </div>
+        </article>
+      </div>
+
+      <footer class="companion-composer">
+        <div class="composer-row">
+          <input type="text" placeholder="Ask about requirements, missing documents, or deadlines...">
+          <button type="button" aria-label="Send message">{% icon 'chevron-right' %}</button>
+        </div>
+        <p>AI responses are advisory only. Verify with your QA Office.</p>
+      </footer>
+    </section>
+  </div>
 {% endblock %}
