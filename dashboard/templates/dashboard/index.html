@@ -24,10 +24,10 @@
         <strong>{{ alert.area_code }} ({{ alert.area_name }})</strong> {{ alert.message }}
       </p>
     </div>
-    <button type="button" class="btn btn-ghost-light">
+    <a href="{% url 'accreditation:review_workflow' %}" class="btn btn-ghost-light">
       Review
       {% icon 'chevron-right' 'icon' %}
-    </button>
+    </a>
   </section>
 
   <section class="stat-grid">
@@ -110,7 +110,7 @@
     <div class="panel panel-activity">
       <div class="panel-head">
         <div class="panel-title">Recent Activity</div>
-        <a href="#" class="panel-link">View all</a>
+        <a href="{% url 'core:notifications' %}" class="panel-link">View all</a>
       </div>
 
       <div class="activity-list">
@@ -132,7 +132,7 @@
     <div class="panel panel-deadlines">
       <div class="panel-head">
         <div class="panel-title">Upcoming Deadlines</div>
-        <a href="#" class="panel-link">See calendar</a>
+        <a href="{% url 'accreditation:review_workflow' %}" class="panel-link">See calendar</a>
       </div>
 
       <div class="deadline-list">

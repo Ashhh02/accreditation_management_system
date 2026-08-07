@@ -1,0 +1,157 @@
+button,
+a,
+input,
+select,
+.panel,
+.stat-card,
+.level-card,
+.area-card,
+.review-stat-card,
+.users-stat-card,
+.repo-stat-card,
+.report-kpi-card,
+.workspace-card,
+.notification-row,
+.repo-document-row,
+.deadline-card,
+.document-item,
+.conversation-item,
+.department-item,
+.subarea-item,
+.settings-tab {
+  transition:
+    background-color 180ms ease,
+    border-color 180ms ease,
+    box-shadow 180ms ease,
+    color 180ms ease,
+    opacity 180ms ease,
+    transform 180ms ease;
+}
+
+.panel:hover,
+.stat-card:hover,
+.level-card:hover,
+.area-card:hover,
+.review-stat-card:hover,
+.users-stat-card:hover,
+.repo-stat-card:hover,
+.report-kpi-card:hover,
+.workspace-card:hover,
+.document-list-card:hover,
+.review-table-card:hover,
+.users-table-card:hover,
+.department-table-card:hover,
+.profile-card:hover,
+.companion-card:hover,
+.chat-shell:hover {
+  box-shadow: 0 12px 30px rgba(67, 13, 34, 0.09);
+  transform: translateY(-2px);
+}
+
+.notification-row:hover,
+.repo-document-row:hover,
+.deadline-card:hover,
+.document-item:hover,
+.conversation-item:hover,
+.department-item:hover,
+.subarea-item:hover {
+  background: #fff7fa;
+}
+
+.area-card:hover,
+.level-card:not(.is-active):hover {
+  border-color: #d7b8c5;
+}
+
+button:hover,
+.btn:hover,
+.panel-link:hover,
+.upload-document-btn:hover,
+.add-document-btn:hover,
+.review-btn:hover,
+.manage-btn:hover,
+.print-btn:hover,
+.export-btn:hover,
+.save-settings-btn:hover {
+  transform: translateY(-1px);
+}
+
+button:active,
+.btn:active,
+.panel-link:active,
+.upload-document-btn:active,
+.add-document-btn:active,
+.review-btn:active,
+.manage-btn:active,
+.print-btn:active,
+.export-btn:active,
+.save-settings-btn:active {
+  transform: translateY(0) scale(0.98);
+}
+
+input:focus,
+select:focus {
+  border-color: var(--maroon-600);
+  box-shadow: 0 0 0 3px rgba(134, 32, 72, 0.12);
+}
+
+.panel-link {
+  color: var(--maroon-700);
+  font-weight: 700;
+}
+
+.panel-link:hover {
+  color: var(--maroon-900);
+}
+
+.ui-toast {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 50;
+  min-width: 220px;
+  max-width: min(360px, calc(100vw - 32px));
+  padding: 13px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: var(--radius-md);
+  background: var(--maroon-900);
+  color: #fff;
+  box-shadow: 0 16px 40px rgba(67, 13, 34, 0.28);
+  font-size: 13px;
+  font-weight: 700;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(12px);
+}
+
+.ui-toast.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.is-filter-hidden {
+  display: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .panel:hover,
+  .stat-card:hover,
+  .level-card:hover,
+  .area-card:hover,
+  .review-stat-card:hover,
+  .users-stat-card:hover,
+  .repo-stat-card:hover,
+  .report-kpi-card:hover,
+  .workspace-card:hover,
+  .document-list-card:hover,
+  .review-table-card:hover,
+  .users-table-card:hover,
+  .department-table-card:hover,
+  .profile-card:hover,
+  .companion-card:hover,
+  .chat-shell:hover,
+  button:hover,
+  .btn:hover {
+    transform: none;
+  }
+}
