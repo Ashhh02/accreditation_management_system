@@ -123,10 +123,10 @@ class SettingsProfileView(TemplateView):
             {
                 'page_title': 'Settings & Profile',
                 'settings_tabs': [
-                    {'label': 'Profile', 'icon': 'users', 'active': True},
-                    {'label': 'Password', 'icon': 'settings', 'active': False},
-                    {'label': 'Notifications', 'icon': 'bell', 'active': False},
-                    {'label': 'Assistant', 'icon': 'sparkle', 'active': False},
+                    {'key': 'profile', 'label': 'Profile', 'icon': 'users', 'active': True},
+                    {'key': 'password', 'label': 'Password', 'icon': 'settings', 'active': False},
+                    {'key': 'notifications', 'label': 'Notifications', 'icon': 'bell', 'active': False},
+                    {'key': 'assistant', 'label': 'Assistant', 'icon': 'sparkle', 'active': False},
                 ],
                 'profile': {
                     'initials': 'MS',

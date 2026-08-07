@@ -21,55 +21,185 @@
     <section class="settings-layout">
       <aside class="settings-tabs" aria-label="Settings sections">
         {% for tab in settings_tabs %}
-          <button type="button" class="settings-tab{% if tab.active %} is-active{% endif %}">
+          <button
+            type="button"
+            class="settings-tab{% if tab.active %} is-active{% endif %}"
+            data-settings-tab="{{ tab.key }}"
+            aria-controls="settings-panel-{{ tab.key }}"
+            aria-selected="{% if tab.active %}true{% else %}false{% endif %}"
+          >
             {% icon tab.icon %}
             <span>{{ tab.label }}</span>
           </button>
         {% endfor %}
       </aside>
 
-      <form class="profile-card">
-        <h2>Personal Information</h2>
+      <div class="settings-panels">
+        <form class="profile-card settings-panel is-active" id="settings-panel-profile" data-settings-panel="profile">
+          <h2>Personal Information</h2>
 
-        <div class="profile-hero">
-          <div class="profile-avatar">{{ profile.initials }}</div>
-          <div>
-            <h3>{{ profile.name }}</h3>
-            <p>{{ profile.office }}</p>
-            <button type="button">Change Photo</button>
+          <div class="profile-hero">
+            <div class="profile-avatar">{{ profile.initials }}</div>
+            <div>
+              <h3>{{ profile.name }}</h3>
+              <p>{{ profile.office }}</p>
+              <button type="button">Change Photo</button>
+            </div>
           </div>
-        </div>
 
-        <div class="field-grid">
-          <label>
-            <span>Full Name</span>
-            <input type="text" value="{{ profile.name }}">
+          <div class="field-grid">
+            <label>
+              <span>Full Name</span>
+              <input type="text" value="{{ profile.name }}">
+            </label>
+
+            <label>
+              <span>Email Address</span>
+              <input type="email" value="{{ profile.email }}">
+            </label>
+          </div>
+
+          <label class="full-field">
+            <span>Department / College</span>
+            <input type="text" value="{{ profile.office }}">
           </label>
 
-          <label>
-            <span>Email Address</span>
-            <input type="email" value="{{ profile.email }}">
+          <section class="role-assignment">
+            <h3>Role Assignment</h3>
+            <div>
+              <span class="role-chip">{{ profile.role }}</span>
+              <p>{{ profile.assignment }}</p>
+            </div>
+          </section>
+
+          <button type="button" class="save-settings-btn">
+            {% icon 'file' %}
+            <span>Save Changes</span>
+          </button>
+        </form>
+
+        <form class="profile-card settings-panel" id="settings-panel-password" data-settings-panel="password" hidden>
+          <h2>Password</h2>
+          <p class="settings-panel-copy">Update your account password and keep access to accreditation files secure.</p>
+
+          <label class="full-field">
+            <span>Current Password</span>
+            <input type="password" placeholder="Enter current password">
           </label>
-        </div>
 
-        <label class="full-field">
-          <span>Department / College</span>
-          <input type="text" value="{{ profile.office }}">
-        </label>
+          <div class="field-grid">
+            <label>
+              <span>New Password</span>
+              <input type="password" placeholder="Enter new password">
+            </label>
 
-        <section class="role-assignment">
-          <h3>Role Assignment</h3>
-          <div>
-            <span class="role-chip">{{ profile.role }}</span>
-            <p>{{ profile.assignment }}</p>
+            <label>
+              <span>Confirm Password</span>
+              <input type="password" placeholder="Confirm new password">
+            </label>
           </div>
-        </section>
 
-        <button type="button" class="save-settings-btn">
-          {% icon 'file' %}
-          <span>Save Changes</span>
-        </button>
-      </form>
+          <section class="settings-note">
+            <strong>Password Requirements</strong>
+            <p>Use at least 8 characters with a mix of letters, numbers, and symbols.</p>
+          </section>
+
+          <button type="button" class="save-settings-btn">
+            {% icon 'file' %}
+            <span>Update Password</span>
+          </button>
+        </form>
+
+        <form class="profile-card settings-panel" id="settings-panel-notifications" data-settings-panel="notifications" hidden>
+          <h2>Notifications</h2>
+          <p class="settings-panel-copy">Choose which accreditation updates should alert you inside the portal.</p>
+
+          <div class="settings-option-list">
+            <label class="settings-option">
+              <span>
+                <strong>Revision Requests</strong>
+                <em>Notify me when reviewers request document changes.</em>
+              </span>
+              <input type="checkbox" checked>
+            </label>
+
+            <label class="settings-option">
+              <span>
+                <strong>Evidence Submissions</strong>
+                <em>Notify me when departments upload new evidence.</em>
+              </span>
+              <input type="checkbox" checked>
+            </label>
+
+            <label class="settings-option">
+              <span>
+                <strong>Deadline Reminders</strong>
+                <em>Send reminders before internal accreditation deadlines.</em>
+              </span>
+              <input type="checkbox" checked>
+            </label>
+
+            <label class="settings-option">
+              <span>
+                <strong>Report Availability</strong>
+                <em>Notify me when monitoring reports are ready.</em>
+              </span>
+              <input type="checkbox">
+            </label>
+          </div>
+
+          <button type="button" class="save-settings-btn">
+            {% icon 'file' %}
+            <span>Save Notification Settings</span>
+          </button>
+        </form>
+
+        <form class="profile-card settings-panel" id="settings-panel-assistant" data-settings-panel="assistant" hidden>
+          <h2>Assistant</h2>
+          <p class="settings-panel-copy">Tune how Smart Companion gives advisory accreditation guidance.</p>
+
+          <div class="settings-option-list">
+            <label class="settings-option">
+              <span>
+                <strong>Proactive Gap Alerts</strong>
+                <em>Surface readiness risks before a submission window narrows.</em>
+              </span>
+              <input type="checkbox" checked>
+            </label>
+
+            <label class="settings-option">
+              <span>
+                <strong>Suggested Follow-Ups</strong>
+                <em>Show recommended questions after assistant replies.</em>
+              </span>
+              <input type="checkbox" checked>
+            </label>
+
+            <label class="settings-option">
+              <span>
+                <strong>Use Formal Tone</strong>
+                <em>Keep assistant messages professional for QA documentation.</em>
+              </span>
+              <input type="checkbox" checked>
+            </label>
+          </div>
+
+          <label class="full-field">
+            <span>Default Assistant Focus</span>
+            <select>
+              <option>Missing documents and deadlines</option>
+              <option>Readiness scoring</option>
+              <option>Reviewer remarks</option>
+              <option>Department follow-up</option>
+            </select>
+          </label>
+
+          <button type="button" class="save-settings-btn">
+            {% icon 'file' %}
+            <span>Save Assistant Settings</span>
+          </button>
+        </form>
+      </div>
     </section>
   </div>
 {% endblock %}

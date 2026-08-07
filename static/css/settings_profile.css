@@ -48,6 +48,10 @@
   overflow: hidden;
 }
 
+.settings-panels {
+  min-width: 0;
+}
+
 .settings-tab {
   width: 100%;
   min-height: 48px;
@@ -99,9 +103,19 @@
   padding: 28px;
 }
 
+.settings-panel[hidden] {
+  display: none;
+}
+
 .profile-card h2 {
   margin-bottom: 18px;
   font-size: 16px;
+}
+
+.settings-panel-copy {
+  margin: -8px 0 20px;
+  color: var(--color-text-muted);
+  font-size: 13px;
 }
 
 .profile-hero {
@@ -166,7 +180,8 @@
 }
 
 .field-grid input,
-.full-field input {
+.full-field input,
+.full-field select {
   width: 100%;
   height: 43px;
   padding: 0 16px;
@@ -176,6 +191,10 @@
   color: var(--color-text);
   font: inherit;
   font-weight: 500;
+}
+
+.full-field select {
+  appearance: none;
 }
 
 .role-assignment {
@@ -217,6 +236,95 @@
   color: var(--maroon-700);
   font-size: 12px;
   font-weight: 700;
+}
+
+.settings-note {
+  margin-top: 16px;
+  padding: 16px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: #fff9eb;
+}
+
+.settings-note strong {
+  display: block;
+  color: #9a710a;
+  font-size: 13px;
+}
+
+.settings-note p {
+  margin-top: 4px;
+  color: var(--color-text-muted);
+  font-size: 13px;
+}
+
+.settings-option-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.settings-option {
+  min-height: 74px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 16px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: #fffdfb;
+}
+
+.settings-option strong,
+.settings-option em {
+  display: block;
+}
+
+.settings-option strong {
+  color: var(--color-text);
+  font-size: 14px;
+  font-style: normal;
+}
+
+.settings-option em {
+  margin-top: 3px;
+  color: var(--color-text-faint);
+  font-size: 12px;
+  font-style: normal;
+}
+
+.settings-option input {
+  width: 42px;
+  height: 24px;
+  flex-shrink: 0;
+  appearance: none;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-pill);
+  background: #e8e1d8;
+  position: relative;
+}
+
+.settings-option input::before {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(37, 20, 15, 0.16);
+  transition: transform 160ms ease;
+}
+
+.settings-option input:checked {
+  border-color: var(--maroon-700);
+  background: var(--maroon-700);
+}
+
+.settings-option input:checked::before {
+  transform: translateX(18px);
 }
 
 .save-settings-btn {

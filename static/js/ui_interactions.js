@@ -107,12 +107,31 @@
       '.subarea-list',
       '.score-row',
       '.conversation-list',
-      '.settings-tabs',
       '.review-pagination',
     ].forEach(function (selector) {
       document.querySelectorAll(selector + ' button').forEach(function (button) {
         button.addEventListener('click', function () {
           setActive(button, selector);
+        });
+      });
+    });
+  }
+
+  function bindSettingsTabs() {
+    document.querySelectorAll('.settings-tab[data-settings-tab]').forEach(function (button) {
+      button.addEventListener('click', function () {
+        const target = button.dataset.settingsTab;
+        const layout = button.closest('.settings-layout');
+        if (!layout || !target) return;
+
+        setActive(button, '.settings-tabs');
+        layout.querySelectorAll('.settings-tab').forEach(function (tab) {
+          tab.setAttribute('aria-selected', tab === button ? 'true' : 'false');
+        });
+        layout.querySelectorAll('.settings-panel').forEach(function (panel) {
+          const isTarget = panel.dataset.settingsPanel === target;
+          panel.hidden = !isTarget;
+          panel.classList.toggle('is-active', isTarget);
         });
       });
     });
@@ -294,6 +313,7 @@
     bindSearches();
     bindFilterTabs();
     bindSelectableGroups();
+    bindSettingsTabs();
     bindNotifications();
     bindMessaging();
     bindActionButtons();
