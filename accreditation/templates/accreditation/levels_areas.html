@@ -77,7 +77,11 @@
 
     <section class="area-grid" aria-label="Accreditation areas">
       {% for area in areas %}
-        <article class="area-card">
+        {% if area.workspace_key %}
+          <a class="area-card" href="{% url 'accreditation:submission_workspace_area' area.workspace_key %}" aria-label="Open {{ area.code }} submission workspace">
+        {% else %}
+          <article class="area-card">
+        {% endif %}
           <div class="area-card-head">
             <div>
               <div class="area-code">{{ area.code }}</div>
@@ -105,7 +109,11 @@
               <span class="status-pill tone-slate">{{ area.missing }} Missing</span>
             {% endif %}
           </div>
-        </article>
+        {% if area.workspace_key %}
+          </a>
+        {% else %}
+          </article>
+        {% endif %}
       {% endfor %}
     </section>
   </div>

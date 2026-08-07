@@ -184,6 +184,16 @@
   font-weight: 700;
 }
 
+.completion-pill.tone-gold {
+  background: #fff7df;
+  color: #9a710a;
+}
+
+.completion-pill.tone-rose {
+  background: #ffe8ef;
+  color: #bf164c;
+}
+
 .completion-pill .icon {
   width: 15px;
   height: 15px;
@@ -241,6 +251,80 @@
   color: var(--color-text);
   font-size: 15px;
   line-height: 1.55;
+}
+
+.requirements-card {
+  padding: 0;
+  overflow: hidden;
+}
+
+.requirements-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.requirements-head h2 {
+  font-size: 16px;
+}
+
+.requirements-head p {
+  margin-top: 4px;
+  color: var(--color-text-faint);
+  font-size: 13px;
+}
+
+.requirements-head > span {
+  flex-shrink: 0;
+  color: var(--maroon-700);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.requirements-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.requirements-list li {
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.requirements-list li:last-child {
+  border-bottom: 0;
+}
+
+.requirement-number {
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--maroon-100);
+  color: var(--maroon-700);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.requirements-list h3 {
+  font-size: 14px;
+}
+
+.requirements-list p {
+  margin-top: 3px;
+  color: var(--color-text-muted);
+  font-size: 13px;
+  line-height: 1.4;
 }
 
 .add-document-btn {
@@ -407,5 +491,14 @@
   .workspace-layout,
   .workspace-side {
     grid-template-columns: 1fr;
+  }
+
+  .requirements-list li {
+    grid-template-columns: 30px minmax(0, 1fr);
+  }
+
+  .requirements-list .status-pill {
+    grid-column: 2;
+    justify-self: start;
   }
 }
