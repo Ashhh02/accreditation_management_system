@@ -44,16 +44,24 @@
             <time>Companion · 10:00 AM</time>
           </div>
         </article>
+
+        <section class="sample-prompt-section" aria-label="Sample prompts">
+          <div class="sample-prompt-head">
+            <h2>Try a sample prompt</h2>
+            <p>Start with one question, or write your own below.</p>
+          </div>
+
+          <div class="sample-prompt-list sample-prompt-list-compact">
+            {% for group in sample_prompts %}
+              {% for prompt in group.prompts|slice:":1" %}
+                <button type="button">{{ prompt }}</button>
+              {% endfor %}
+            {% endfor %}
+          </div>
+        </section>
       </div>
 
       <footer class="companion-composer">
-        <div class="suggested-prompts" aria-label="Suggested prompts">
-          <button type="button">What documents are missing?</button>
-          <button type="button">Summarize critical areas</button>
-          <button type="button">Show upcoming deadlines</button>
-          <button type="button">Recommend next actions</button>
-        </div>
-
         <div class="composer-row">
           <input type="text" placeholder="Ask about requirements, missing documents, or deadlines...">
           <button type="button" aria-label="Send message">{% icon 'chevron-right' %}</button>

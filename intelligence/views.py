@@ -112,6 +112,35 @@ class SmartCompanionView(TemplateView):
                         'tone': 'green',
                     },
                 ],
+                'sample_prompts': [
+                    {
+                        'title': 'Evidence Help',
+                        'description': 'Find missing files, weak submissions, and next upload priorities.',
+                        'prompts': [
+                            'What documents are missing for Area II?',
+                            'Which evidence should we upload first?',
+                            'Check if Area III is ready for review.',
+                        ],
+                    },
+                    {
+                        'title': 'Readiness Review',
+                        'description': 'Summarize gaps and explain what needs follow-up this week.',
+                        'prompts': [
+                            'Summarize critical areas for Level I.',
+                            'Explain why Area VIII is at risk.',
+                            'Show departments with low compliance.',
+                        ],
+                    },
+                    {
+                        'title': 'Deadline Planning',
+                        'description': 'Turn accreditation deadlines into concrete action steps.',
+                        'prompts': [
+                            'What should we finish before July 25?',
+                            'Create a follow-up plan for overdue items.',
+                            'Recommend next actions for QA Office.',
+                        ],
+                    },
+                ],
             }
         )
         return context

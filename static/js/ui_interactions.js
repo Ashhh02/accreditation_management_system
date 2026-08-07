@@ -183,6 +183,53 @@
     showToast('Message sent');
   }
 
+  function companionAnswer(question) {
+    const lower = normalize(question);
+    if (lower.includes('missing') || lower.includes('documents')) {
+      return 'Area II needs updated faculty credentials, current syllabi, and supporting portfolio samples. Prioritize documents tied to pending or revision items first.';
+    }
+    if (lower.includes('deadline') || lower.includes('july 25')) {
+      return 'Before July 25, finish Level I preliminary evidence, resolve Area II revisions, and confirm overdue Student Services submissions.';
+    }
+    if (lower.includes('critical') || lower.includes('risk') || lower.includes('area viii')) {
+      return 'The highest-risk areas are Area VII and Area VIII. Area VIII needs early follow-up because readiness is still below target and the deadline window is narrowing.';
+    }
+    if (lower.includes('compliance') || lower.includes('department')) {
+      return 'Engineering and Arts & Sciences need the closest monitoring. Check pending evidence counts, reviewer remarks, and zero-submission areas first.';
+    }
+    return 'Start with the items marked pending or needs revision, then assign each item to an owner with a target upload date. I can also summarize this into a checklist.';
+  }
+
+  function submitCompanionQuestion(input) {
+    const question = input.value.trim();
+    if (!question) {
+      showToast('Choose a prompt or type a question');
+      return;
+    }
+
+    const body = document.querySelector('.companion-body');
+    if (!body) return;
+
+    const userMessage = document.createElement('article');
+    userMessage.className = 'companion-user-message';
+    userMessage.innerHTML = '<div class="assistant-bubble"></div>';
+    userMessage.querySelector('.assistant-bubble').textContent = question;
+
+    const reply = document.createElement('article');
+    reply.className = 'companion-message companion-reply';
+    reply.innerHTML =
+      '<div class="companion-bot-icon">' +
+      '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v3M12 18v3M3 12h3M18 12h3M6 6l2 2M16 16l2 2M6 18l2-2M16 8l2-2"/><circle cx="12" cy="12" r="3"/></svg>' +
+      '</div><div class="message-stack"><div class="assistant-bubble"></div><time>Companion · Now</time></div>';
+    reply.querySelector('.assistant-bubble').textContent = companionAnswer(question);
+
+    body.appendChild(userMessage);
+    body.appendChild(reply);
+    input.value = '';
+    body.scrollTop = body.scrollHeight;
+    showToast('Smart Companion answered');
+  }
+
   function bindMessaging() {
     document.querySelectorAll('.message-composer button').forEach(function (button) {
       button.addEventListener('click', function () {
@@ -200,7 +247,7 @@
       });
     });
 
-    document.querySelectorAll('.suggested-prompts button').forEach(function (button) {
+    document.querySelectorAll('.sample-prompt-list button').forEach(function (button) {
       button.addEventListener('click', function () {
         const input = document.querySelector('.composer-row input');
         if (!input) return;
@@ -212,13 +259,16 @@
     document.querySelectorAll('.composer-row button').forEach(function (button) {
       button.addEventListener('click', function () {
         const input = button.closest('.composer-row').querySelector('input');
-        const text = input.value.trim();
-        if (!text) {
-          showToast('Choose a prompt or type a question');
-          return;
+        submitCompanionQuestion(input);
+      });
+    });
+
+    document.querySelectorAll('.composer-row input').forEach(function (input) {
+      input.addEventListener('keydown', function (event) {
+        if (event.key === 'Enter') {
+          event.preventDefault();
+          submitCompanionQuestion(input);
         }
-        showToast('Question submitted to Smart Companion');
-        input.value = '';
       });
     });
   }
@@ -279,14 +329,6 @@
       });
     });
 
-    document.querySelectorAll('.manage-btn').forEach(function (button) {
-      button.addEventListener('click', function () {
-        const row = button.closest('tr');
-        const name = row ? row.querySelector('strong').textContent : 'user';
-        showToast('Managing ' + name);
-      });
-    });
-
     document.querySelectorAll('.profile-hero button').forEach(function (button) {
       button.addEventListener('click', function () {
         showToast('Photo picker opened');
@@ -297,6 +339,95 @@
       button.addEventListener('click', function () {
         showToast('Thread options opened');
       });
+    });
+  }
+
+  function toneForRole(role) {
+    return {
+      'Program Head': 'blue',
+      Dean: 'rose',
+      'Area Chair': 'gold',
+      'External Accreditor': 'slate',
+      QA: 'green',
+    }[role] || 'slate';
+  }
+
+  function toneForStatus(status) {
+    return status === 'Active' || status === 'Approved'
+      ? 'green'
+      : status === 'Pending'
+        ? 'gold'
+        : 'slate';
+  }
+
+  function bindUserManagement() {
+    const dialog = document.querySelector('.user-manage-dialog');
+    if (!dialog) return;
+
+    const form = dialog.querySelector('.user-manage-form');
+    let selectedButton = null;
+
+    function closeDialog() {
+      if (dialog.open) dialog.close();
+      selectedButton = null;
+    }
+
+    document.querySelectorAll('.manage-btn').forEach(function (button) {
+      button.addEventListener('click', function () {
+        selectedButton = button;
+        dialog.querySelector('[data-managed-name]').textContent = button.dataset.userName;
+        dialog.querySelector('[data-managed-email]').textContent = button.dataset.userEmail;
+        dialog.querySelector('.managed-user-avatar').textContent = button.dataset.userName
+          .split(' ')
+          .filter(function (part) { return !part.endsWith('.'); })
+          .map(function (part) { return part.charAt(0); })
+          .slice(-2)
+          .join('');
+        form.elements.role.value = button.dataset.userRole;
+        form.elements.department.value = button.dataset.userDepartment;
+        form.elements.status.value = button.dataset.userStatus;
+        form.elements.approval.value = button.dataset.userApproval;
+        dialog.showModal();
+      });
+    });
+
+    dialog.querySelector('.dialog-close').addEventListener('click', closeDialog);
+    dialog.querySelector('.dialog-cancel').addEventListener('click', closeDialog);
+    dialog.addEventListener('click', function (event) {
+      if (event.target === dialog) closeDialog();
+    });
+
+    form.addEventListener('submit', function (event) {
+      event.preventDefault();
+      if (!selectedButton) return;
+
+      const row = selectedButton.closest('tr');
+      const role = form.elements.role.value;
+      const department = form.elements.department.value.trim();
+      const status = form.elements.status.value;
+      const approval = form.elements.approval.value;
+      const userName = selectedButton.dataset.userName;
+
+      selectedButton.dataset.userRole = role;
+      selectedButton.dataset.userDepartment = department;
+      selectedButton.dataset.userStatus = status;
+      selectedButton.dataset.userApproval = approval;
+
+      const roleChip = row.querySelector('td:nth-child(2) .user-chip');
+      roleChip.textContent = role;
+      roleChip.className = 'user-chip tone-' + toneForRole(role);
+      row.querySelector('td:nth-child(3)').textContent = department;
+
+      const statusChip = row.querySelector('.user-presence');
+      statusChip.textContent = status;
+      statusChip.className = 'user-presence tone-' + toneForStatus(status);
+
+      const approvalChip = row.querySelector('td:nth-child(6) .user-chip');
+      approvalChip.textContent = approval;
+      approvalChip.className = 'user-chip tone-' + toneForStatus(approval);
+
+      closeDialog();
+      showToast(userName + ' updated');
     });
   }
 
@@ -317,6 +448,7 @@
     bindNotifications();
     bindMessaging();
     bindActionButtons();
+    bindUserManagement();
     bindDashboardLinks();
   });
 })();

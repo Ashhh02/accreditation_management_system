@@ -79,7 +79,16 @@
                   <span class="user-chip tone-{{ user.approval_tone }}">{{ user.approval }}</span>
                 </td>
                 <td>
-                  <button type="button" class="manage-btn">Manage</button>
+                  <button
+                    type="button"
+                    class="manage-btn"
+                    data-user-name="{{ user.name }}"
+                    data-user-email="{{ user.email }}"
+                    data-user-role="{{ user.role }}"
+                    data-user-department="{{ user.department }}"
+                    data-user-status="{{ user.status }}"
+                    data-user-approval="{{ user.approval }}"
+                  >Manage</button>
                 </td>
               </tr>
             {% endfor %}
@@ -92,5 +101,62 @@
         <span class="page-pill">1</span>
       </footer>
     </section>
+
+    <dialog class="user-manage-dialog" aria-labelledby="user-manage-title">
+      <form class="user-manage-form" method="dialog">
+        <header class="user-manage-dialog-header">
+          <div>
+            <span class="dialog-kicker">User Account</span>
+            <h2 id="user-manage-title">Manage User</h2>
+          </div>
+          <button type="button" class="dialog-close" aria-label="Close user management panel">&times;</button>
+        </header>
+
+        <div class="managed-user-summary">
+          <span class="managed-user-avatar"></span>
+          <div>
+            <strong data-managed-name></strong>
+            <span data-managed-email></span>
+          </div>
+        </div>
+
+        <div class="manage-field-grid">
+          <label>
+            <span>Role</span>
+            <select name="role">
+              <option>Program Head</option>
+              <option>Dean</option>
+              <option>Area Chair</option>
+              <option>External Accreditor</option>
+              <option>QA</option>
+            </select>
+          </label>
+          <label>
+            <span>Department</span>
+            <input name="department" type="text">
+          </label>
+          <label>
+            <span>Account Status</span>
+            <select name="status">
+              <option>Active</option>
+              <option>Pending</option>
+              <option>Inactive</option>
+            </select>
+          </label>
+          <label>
+            <span>Approval</span>
+            <select name="approval">
+              <option>Approved</option>
+              <option>Pending</option>
+            </select>
+          </label>
+        </div>
+
+        <footer class="user-manage-actions">
+          <button type="button" class="dialog-cancel">Cancel</button>
+          <button type="submit" class="dialog-save">Save Changes</button>
+        </footer>
+      </form>
+    </dialog>
   </div>
 {% endblock %}

@@ -6,12 +6,15 @@
 }
 
 .companion-header {
-  margin-bottom: 22px;
+  margin-bottom: 26px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--color-border);
 }
 
 .companion-header h1 {
-  font-size: 30px;
-  line-height: 1.1;
+  font-size: clamp(30px, 3vw, 38px);
+  line-height: 1;
+  letter-spacing: -0.045em;
 }
 
 .companion-header p {
@@ -27,24 +30,24 @@
   flex-direction: column;
   overflow: hidden;
   border: 1px solid var(--color-border);
-  border-radius: 10px;
+  border-radius: var(--radius-lg);
   background: var(--color-surface);
   box-shadow: var(--shadow-card);
 }
 
 .companion-card-head {
-  min-height: 54px;
+  min-height: 76px;
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 12px 18px;
+  padding: 16px 24px;
   background: var(--maroon-900);
   color: #fff;
 }
 
 .companion-bot-icon {
-  width: 30px;
-  height: 30px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -60,7 +63,7 @@
 }
 
 .companion-card-head h2 {
-  font-size: 13px;
+  font-size: 15px;
   line-height: 1.2;
 }
 
@@ -72,14 +75,18 @@
 
 .companion-body {
   flex: 1;
-  padding: 14px 18px;
+  min-height: 510px;
+  padding: 30px;
   overflow-y: auto;
+  background:
+    radial-gradient(circle at 95% 8%, rgba(247, 228, 235, 0.9), transparent 25%),
+    #fff;
 }
 
 .companion-message {
   display: grid;
-  grid-template-columns: 30px minmax(0, 1fr);
-  gap: 12px;
+  grid-template-columns: 36px minmax(0, 1fr);
+  gap: 14px;
   max-width: 100%;
 }
 
@@ -89,29 +96,29 @@
 
 .assistant-bubble {
   max-width: min(100%, 980px);
-  padding: 14px 16px;
-  border-radius: 12px;
+  padding: 18px 20px;
+  border-radius: 4px 16px 16px;
   background: #f4f1ee;
   color: var(--color-text);
-  font-size: 14px;
+  font-size: 15px;
   line-height: 1.55;
 }
 
 .insight-stack {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin-top: 12px;
-  max-width: min(100%, 980px);
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 18px;
+  max-width: min(100%, 1040px);
 }
 
 .companion-insight {
-  min-height: 54px;
+  min-height: 92px;
   display: grid;
   grid-template-columns: 9px minmax(0, 1fr);
   gap: 12px;
   align-items: center;
-  padding: 11px 12px;
+  padding: 16px;
   border: 1px solid var(--color-border);
   border-radius: 10px;
   background: #fbfaf8;
@@ -136,11 +143,11 @@
 }
 
 .companion-insight strong {
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .companion-insight p {
-  margin-top: 2px;
+  margin-top: 4px;
   color: var(--color-text-muted);
   font-size: 12px;
 }
@@ -152,41 +159,77 @@
   font-size: 12px;
 }
 
-.companion-composer {
-  padding: 12px 18px;
-  border-top: 1px solid var(--color-border);
+.sample-prompt-section {
+  margin: 30px 0 8px 50px;
+  max-width: min(100%, 900px);
 }
 
-.suggested-prompts {
+.sample-prompt-head {
+  margin-bottom: 12px;
+}
+
+.sample-prompt-head h2 {
+  font-size: 18px;
+  line-height: 1.2;
+}
+
+.sample-prompt-head p {
+  margin-top: 4px;
+  color: var(--color-text-muted);
+  font-size: 13px;
+}
+
+.sample-prompt-list {
   display: flex;
-  gap: 8px;
   flex-wrap: wrap;
-  margin-bottom: 10px;
+  gap: 10px;
+  margin-top: 14px;
 }
 
-.suggested-prompts button {
-  min-height: 30px;
-  padding: 0 12px;
+.sample-prompt-list button {
+  min-height: 40px;
+  padding: 8px 14px;
   border: 1px solid #ead6df;
   border-radius: var(--radius-pill);
   background: #fff7f9;
   color: var(--maroon-700);
   font-size: 12px;
   font-weight: 600;
+  text-align: left;
 }
 
-.suggested-prompts button:hover {
-  background: #f7e4eb;
+.sample-prompt-list button:hover {
+  background: var(--maroon-100);
+}
+
+.companion-user-message {
+  max-width: min(720px, 75%);
+  margin: 18px 0 0 auto;
+}
+
+.companion-user-message .assistant-bubble {
+  margin-left: auto;
+  background: var(--maroon-700);
+  color: #fff;
+}
+
+.companion-reply {
+  margin-top: 18px;
+}
+
+.companion-composer {
+  padding: 18px 30px 14px;
+  border-top: 1px solid var(--color-border);
 }
 
 .composer-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 36px;
+  grid-template-columns: minmax(0, 1fr) 46px;
   gap: 10px;
 }
 
 .composer-row input {
-  height: 38px;
+  height: 46px;
   min-width: 0;
   padding: 0 16px;
   border: 1px solid var(--color-border);
@@ -200,14 +243,14 @@
 }
 
 .composer-row button {
-  width: 36px;
-  height: 36px;
+  width: 46px;
+  height: 46px;
   border: 0;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #e3ddd8;
+  background: var(--maroon-700);
   color: #fff;
 }
 
@@ -228,7 +271,25 @@
     grid-template-columns: 1fr;
   }
 
+  .sample-prompt-section {
+    margin-left: 0;
+  }
+
+  .insight-stack {
+    grid-template-columns: 1fr;
+  }
+
+  .companion-user-message {
+    max-width: 100%;
+  }
+
   .companion-card {
     min-height: 0;
+  }
+
+  .companion-body,
+  .companion-composer {
+    padding-left: 18px;
+    padding-right: 18px;
   }
 }
