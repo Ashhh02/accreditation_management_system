@@ -180,6 +180,98 @@
   flex-direction: column;
 }
 
+.topbar {
+  height: var(--topbar-height);
+  flex-shrink: 0;
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 28px;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.topbar-title {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.search-field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  padding: 8px 14px;
+  width: 240px;
+  color: var(--color-text-faint);
+}
+
+.search-field .icon {
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+}
+
+.search-field input {
+  border: 0;
+  background: transparent;
+  outline: none;
+  font-size: 13px;
+  color: var(--color-text);
+  width: 100%;
+}
+
+.search-field input::placeholder {
+  color: var(--color-text-faint);
+}
+
+.icon-btn {
+  position: relative;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-muted);
+}
+
+.icon-btn .icon {
+  width: 17px;
+  height: 17px;
+}
+
+.icon-btn .dot-badge {
+  position: absolute;
+  top: -3px;
+  right: -3px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: var(--radius-pill);
+  background: var(--maroon-700);
+  color: #fff;
+  font-size: 9.5px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--color-surface);
+}
+
 .btn {
   display: inline-flex;
   align-items: center;
@@ -206,6 +298,24 @@
   background: rgba(255, 255, 255, 0.14);
   color: #fff;
   border-color: rgba(255, 255, 255, 0.3);
+}
+
+.topbar-user {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-left: 10px;
+  border-left: 1px solid var(--color-border);
+}
+
+.topbar-user .user-name {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.topbar-user .user-role {
+  font-size: 11.5px;
+  color: var(--color-text-faint);
 }
 
 .content {
@@ -251,6 +361,10 @@
   font-size: 17px;
   color: var(--color-text);
   margin-bottom: 6px;
+}
+
+@media (max-width: 1024px) {
+  .search-field { display: none; }
 }
 
 @media (max-width: 880px) {
