@@ -28,8 +28,10 @@
     </div>
 
     <header class="workspace-header">
-      <h1>{{ workspace.area_code }} - {{ workspace.area_name }}</h1>
-      <p>{{ workspace.department }} · Program Head: {{ workspace.program_head }}</p>
+      <div class="workspace-header-copy">
+        <h1>{{ workspace.area_code }} - {{ workspace.area_name }}</h1>
+        <p>{{ workspace.department }} · Program Head: {{ workspace.program_head }}</p>
+      </div>
     </header>
 
     <section class="workspace-layout">
@@ -133,6 +135,14 @@
               </article>
             {% endfor %}
           </div>
+
+          {% if workspace.subarea_key %}
+            <div class="workspace-actions workspace-document-actions" aria-label="Submission actions">
+              <button type="button" class="workspace-action-btn workspace-action-cancel" data-workspace-action="cancel">Cancel</button>
+              <button type="button" class="workspace-action-btn workspace-action-resubmit" data-workspace-action="resubmit">Resubmit</button>
+              <button type="button" class="workspace-action-btn workspace-action-submit" data-workspace-action="submit">Submit</button>
+            </div>
+          {% endif %}
         </section>
       </main>
 

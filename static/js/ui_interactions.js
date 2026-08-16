@@ -342,6 +342,21 @@
     });
   }
 
+  function bindWorkspaceActions() {
+    const messages = {
+      submit: 'Submission sent for review',
+      resubmit: 'Submission resubmitted for review',
+      cancel: 'Submission changes cancelled',
+    };
+
+    document.querySelectorAll('.workspace-action-btn').forEach(function (button) {
+      button.addEventListener('click', function () {
+        const action = button.dataset.workspaceAction;
+        if (action && messages[action]) showToast(messages[action]);
+      });
+    });
+  }
+
   function toneForRole(role) {
     return {
       'Program Head': 'blue',
@@ -448,6 +463,7 @@
     bindNotifications();
     bindMessaging();
     bindActionButtons();
+    bindWorkspaceActions();
     bindUserManagement();
     bindDashboardLinks();
   });
