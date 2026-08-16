@@ -2,8 +2,7 @@
   width: 100%;
 }
 
-.workspace-breadcrumb,
-.workspace-trail {
+.workspace-breadcrumb {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -15,14 +14,8 @@
   font-size: 14px;
 }
 
-.workspace-breadcrumb strong,
-.workspace-trail strong {
+.workspace-breadcrumb strong {
   color: var(--color-text);
-}
-
-.workspace-trail {
-  margin-bottom: 10px;
-  font-size: 14px;
 }
 
 .trail-icon {

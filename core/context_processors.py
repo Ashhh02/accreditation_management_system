@@ -33,7 +33,7 @@ def site_nav(request):
                     'url_name': 'accreditation:levels_areas',
                 },
                 {
-                    'label': 'Submission Workspace',
+                    'label': 'Evidence Workspace',
                     'icon': 'folder',
                     'url_name': 'accreditation:submission_workspace',
                 },

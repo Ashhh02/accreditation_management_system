@@ -429,7 +429,7 @@ class SubmissionWorkspaceView(TemplateView):
             workspace = self._get_subarea_workspace(area_key, subarea_key)
             context.update(
                 {
-                    'page_title': 'Submission Workspace',
+                    'page_title': f"Level I · {workspace['area_code']} · {workspace['area_name']} · {workspace['subarea_code']}",
                     'workspace': workspace,
                     'sub_areas': workspace['sub_areas'],
                     'documents': workspace['documents'],
@@ -513,7 +513,7 @@ class SubmissionWorkspaceView(TemplateView):
         workspace = workspaces.get(area_key, workspaces['area-iii'])
         context.update(
             {
-                'page_title': 'Submission Workspace',
+                'page_title': f"Level I · {workspace['area_code']} · {workspace['area_name']}",
                 'workspace': workspace,
                 'sub_areas': workspace['sub_areas'],
                 'documents': workspace['documents'],
