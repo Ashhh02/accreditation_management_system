@@ -18,6 +18,15 @@
   color: var(--color-text);
 }
 
+.workspace-breadcrumb a {
+  color: var(--color-text-faint);
+  text-decoration: none;
+}
+
+.workspace-breadcrumb a:hover {
+  color: var(--maroon-700);
+}
+
 .trail-icon {
   width: 14px;
   height: 14px;

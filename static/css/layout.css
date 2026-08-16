@@ -199,6 +199,10 @@
   font-weight: 700;
 }
 
+.topbar-title-hidden {
+  visibility: hidden;
+}
+
 .topbar-right {
   display: flex;
   align-items: center;

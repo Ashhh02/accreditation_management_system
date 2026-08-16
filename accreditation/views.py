@@ -430,6 +430,7 @@ class SubmissionWorkspaceView(TemplateView):
             context.update(
                 {
                     'page_title': f"Level I · {workspace['area_code']} · {workspace['area_name']} · {workspace['subarea_code']}",
+                    'hide_topbar_title': True,
                     'workspace': workspace,
                     'sub_areas': workspace['sub_areas'],
                     'documents': workspace['documents'],
@@ -510,10 +511,11 @@ class SubmissionWorkspaceView(TemplateView):
                 'missing_requirements': ['Updated AY 2025-26 syllabi for all courses', 'Faculty instructional portfolio samples'],
             },
         }
-        workspace = workspaces.get(area_key, workspaces['area-iii'])
+        workspace = {**workspaces.get(area_key, workspaces['area-iii']), 'area_key': area_key}
         context.update(
             {
                 'page_title': f"Level I · {workspace['area_code']} · {workspace['area_name']}",
+                'hide_topbar_title': True,
                 'workspace': workspace,
                 'sub_areas': workspace['sub_areas'],
                 'documents': workspace['documents'],
