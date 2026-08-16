@@ -2,7 +2,7 @@
   width: 100%;
 }
 
-.workspace-breadcrumb {
+.evidence-breadcrumb {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -11,20 +11,20 @@
   font-size: 14px;
 }
 
-.workspace-breadcrumb strong {
+.evidence-breadcrumb strong {
   color: var(--color-text);
 }
 
-.workspace-breadcrumb a {
+.evidence-breadcrumb a {
   color: var(--color-text-faint);
   text-decoration: none;
 }
 
-.workspace-breadcrumb a:hover {
+.evidence-breadcrumb a:hover {
   color: var(--maroon-700);
 }
 
-.trail-icon {
+.evidence-breadcrumb .trail-icon {
   width: 14px;
   height: 14px;
 }

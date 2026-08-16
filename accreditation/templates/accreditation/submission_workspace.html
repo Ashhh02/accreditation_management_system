@@ -7,23 +7,17 @@
 
 {% block content %}
   <div class="workspace-page">
-    <div class="workspace-breadcrumb">
-      <a href="{% url 'accreditation:levels_areas' %}">Level I</a>
-      <span>{% icon 'chevron-right' 'trail-icon' %}</span>
-      {% if workspace.area_key %}
+    {% if workspace.subarea_key %}
+      <div class="evidence-breadcrumb">
+        <a href="{% url 'accreditation:levels_areas' %}">Accreditation</a>
+        <span>/</span>
+        <a href="{% url 'accreditation:levels_areas' %}">Levels &amp; Areas</a>
+        <span>/</span>
         <a href="{% url 'accreditation:area_details' workspace.area_key %}">{{ workspace.area_code }}</a>
-      {% else %}
-        <span>{{ workspace.area_code }}</span>
-      {% endif %}
-      <span>{% icon 'chevron-right' 'trail-icon' %}</span>
-      {% if workspace.subarea_code %}
-        <a href="{% url 'accreditation:area_details' workspace.area_key %}">{{ workspace.area_name }}</a>
-        <span>{% icon 'chevron-right' 'trail-icon' %}</span>
+        <span>/</span>
         <strong>{{ workspace.subarea_code }}</strong>
-      {% else %}
-        <strong>{{ workspace.area_name }}</strong>
-      {% endif %}
-    </div>
+      </div>
+    {% endif %}
 
     <header class="workspace-header">
       <div class="workspace-header-copy">
