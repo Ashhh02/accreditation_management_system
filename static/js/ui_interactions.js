@@ -291,6 +291,83 @@
     URL.revokeObjectURL(link.href);
   }
 
+  const profilePhotoStorageKey = 'jmcfi.profilePhoto';
+
+  function applyProfilePhoto(photoUrl) {
+    document.querySelectorAll('[data-profile-avatar]').forEach(function (avatar) {
+      avatar.replaceChildren();
+      if (photoUrl) {
+        const image = document.createElement('img');
+        image.className = 'avatar-photo';
+        image.src = photoUrl;
+        image.alt = 'Profile photo';
+        avatar.appendChild(image);
+        avatar.classList.add('has-photo');
+      } else {
+        avatar.classList.remove('has-photo');
+        avatar.textContent = avatar.dataset.profileInitials || '';
+      }
+    });
+  }
+
+  function getStoredProfilePhoto() {
+    try {
+      return window.localStorage.getItem(profilePhotoStorageKey) || '';
+    } catch (error) {
+      return '';
+    }
+  }
+
+  function bindProfilePhoto() {
+    applyProfilePhoto(getStoredProfilePhoto());
+
+    const input = document.querySelector('#profile-photo-input');
+    if (!input) return;
+
+    document.querySelectorAll('.change-photo-btn').forEach(function (button) {
+      button.addEventListener('click', function () {
+        input.click();
+      });
+    });
+
+    input.addEventListener('change', function () {
+      const file = input.files && input.files[0];
+      if (!file) return;
+
+      if (!file.type.startsWith('image/')) {
+        showToast('Choose an image file');
+        input.value = '';
+        return;
+      }
+
+      if (file.size > 5 * 1024 * 1024) {
+        showToast('Photo must be smaller than 5 MB');
+        input.value = '';
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.addEventListener('load', function () {
+        const photoUrl = typeof reader.result === 'string' ? reader.result : '';
+        if (!photoUrl) return;
+
+        applyProfilePhoto(photoUrl);
+        try {
+          window.localStorage.setItem(profilePhotoStorageKey, photoUrl);
+          showToast('Profile photo updated');
+        } catch (error) {
+          showToast('Profile photo updated for this session');
+        }
+        input.value = '';
+      });
+      reader.addEventListener('error', function () {
+        showToast('Could not read that photo');
+        input.value = '';
+      });
+      reader.readAsDataURL(file);
+    });
+  }
+
   function bindActionButtons() {
     document.querySelectorAll('.print-btn').forEach(function (button) {
       button.addEventListener('click', function () {
@@ -326,12 +403,6 @@
     document.querySelectorAll('.review-btn').forEach(function (button) {
       button.addEventListener('click', function () {
         showToast('Review panel opened');
-      });
-    });
-
-    document.querySelectorAll('.profile-hero button').forEach(function (button) {
-      button.addEventListener('click', function () {
-        showToast('Photo picker opened');
       });
     });
 
@@ -470,6 +541,7 @@
     bindSettingsTabs();
     bindNotifications();
     bindMessaging();
+    bindProfilePhoto();
     bindActionButtons();
     bindWorkspaceActions();
     bindUserManagement();

@@ -7,12 +7,6 @@
 
 {% block content %}
   <div class="settings-page">
-    <div class="settings-breadcrumb">
-      <span>Administration</span>
-      <span>/</span>
-      <strong>Settings & Profile</strong>
-    </div>
-
     <header class="settings-header">
       <h1>Settings & Profile</h1>
       <p>Manage your account preferences and settings</p>
@@ -39,11 +33,12 @@
           <h2>Personal Information</h2>
 
           <div class="profile-hero">
-            <div class="profile-avatar">{{ profile.initials }}</div>
+            <div class="profile-avatar" data-profile-avatar data-profile-initials="{{ profile.initials }}">{{ profile.initials }}</div>
             <div>
               <h3>{{ profile.name }}</h3>
               <p>{{ profile.office }}</p>
-              <button type="button">Change Photo</button>
+              <button type="button" class="change-photo-btn" aria-controls="profile-photo-input">Change Photo</button>
+              <input id="profile-photo-input" type="file" accept="image/*" hidden>
             </div>
           </div>
 
