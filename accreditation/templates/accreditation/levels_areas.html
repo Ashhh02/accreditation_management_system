@@ -78,7 +78,7 @@
     <section class="area-grid" aria-label="Accreditation areas">
       {% for area in areas %}
         {% if area.workspace_key %}
-          <a class="area-card" href="{% url 'accreditation:submission_workspace_area' area.workspace_key %}" aria-label="Open {{ area.code }} submission workspace">
+          <a class="area-card" href="{% url 'accreditation:area_details' area.workspace_key %}" aria-label="Open {{ area.code }} sub-areas">
         {% else %}
           <article class="area-card">
         {% endif %}

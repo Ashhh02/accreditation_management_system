@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+{% load static nav_extras %}
+
+{% block extra_css %}
+  <link rel="stylesheet" href="{% static 'css/area_details.css' %}">
+{% endblock %}
+
+{% block content %}
+  <div class="area-details-page">
+    <div class="area-details-breadcrumb">
+      <a href="{% url 'accreditation:levels_areas' %}">Accreditation</a>
+      <span>/</span>
+      <a href="{% url 'accreditation:levels_areas' %}">Levels &amp; Areas</a>
+      <span>/</span>
+      <strong>{{ area.code }}</strong>
+    </div>
+
+    <header class="area-details-header">
+      <div>
+        <div class="area-details-eyebrow">Level I · {{ area.code }}</div>
+        <h1>{{ area.name }}</h1>
+        <p>{{ sub_areas|length }} sub-area{{ sub_areas|length|pluralize }} configured for this area.</p>
+      </div>
+      <a class="area-details-back" href="{% url 'accreditation:levels_areas' %}">← Back to all areas</a>
+    </header>
+
+    <section class="area-details-summary" aria-label="Accreditation structure summary">
+      <div>
+        <strong>Your app currently has {{ area_count }} areas, {{ total_subarea_count }} sub-areas.</strong>
+        <span>Select a sub-area container below to continue organizing its evidence.</span>
+      </div>
+      <span class="area-count-badge">{{ sub_areas|length }} Sub-Areas</span>
+    </section>
+
+    {% if sub_areas %}
+      <section class="subarea-grid" aria-label="{{ area.code }} sub-areas">
+        {% for sub_area in sub_areas %}
+          <article class="subarea-card">
+            <div class="subarea-card-top">
+              <span class="subarea-code">{{ sub_area.code }}</span>
+              <span class="subarea-index">{{ forloop.counter|stringformat:'02d' }}</span>
+            </div>
+            <h2>{{ sub_area.title }}</h2>
+          </article>
+        {% endfor %}
+      </section>
+    {% else %}
+      <section class="subarea-empty-state">
+        <div class="subarea-empty-icon">XI</div>
+        <h2>No sub-areas configured yet</h2>
+        <p>Area XI — Employability does not have sub-areas or evidence items configured yet.</p>
+      </section>
+    {% endif %}
+  </div>
+{% endblock %}
