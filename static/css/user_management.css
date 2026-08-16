@@ -2,19 +2,6 @@
   width: 100%;
 }
 
-.users-breadcrumb {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 46px;
-  color: var(--color-text-faint);
-  font-size: 14px;
-}
-
-.users-breadcrumb strong {
-  color: var(--color-text);
-}
-
 .users-header {
   margin-bottom: 24px;
 }
@@ -447,10 +434,6 @@
 }
 
 @media (max-width: 680px) {
-  .users-breadcrumb {
-    margin-bottom: 28px;
-  }
-
   .users-stat-grid {
     grid-template-columns: 1fr;
   }
