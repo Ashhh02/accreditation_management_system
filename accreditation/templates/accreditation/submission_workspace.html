@@ -18,7 +18,13 @@
       <span>{% icon 'chevron-right' 'trail-icon' %}</span>
       <span>{{ workspace.area_code }}</span>
       <span>{% icon 'chevron-right' 'trail-icon' %}</span>
-      <strong>{{ workspace.area_name }}</strong>
+      {% if workspace.subarea_code %}
+        <span>{{ workspace.area_name }}</span>
+        <span>{% icon 'chevron-right' 'trail-icon' %}</span>
+        <strong>{{ workspace.subarea_code }}</strong>
+      {% else %}
+        <strong>{{ workspace.area_name }}</strong>
+      {% endif %}
     </div>
 
     <header class="workspace-header">
@@ -31,11 +37,19 @@
         <div class="subarea-title">Sub-Areas</div>
         <div class="subarea-list">
           {% for item in sub_areas %}
-            <button type="button" class="subarea-item{% if item.active %} is-active{% endif %}">
+            {% if workspace.subarea_key %}
+              <a href="{% url 'accreditation:submission_workspace_subarea' workspace.area_key item.slug %}" class="subarea-item{% if item.active %} is-active{% endif %}">
+            {% else %}
+              <button type="button" class="subarea-item{% if item.active %} is-active{% endif %}">
+            {% endif %}
               <strong>{{ item.code }}</strong>
               <span>{{ item.title }}</span>
               <em class="status-pill tone-{{ item.tone }}">{{ item.status }}</em>
-            </button>
+            {% if workspace.subarea_key %}
+              </a>
+            {% else %}
+              </button>
+            {% endif %}
           {% endfor %}
         </div>
       </aside>
@@ -71,8 +85,13 @@
         <section class="workspace-card requirements-card">
           <div class="requirements-head">
             <div>
-              <h2>Required Documents and Instructions</h2>
-              <p>Prepare each item before submitting Area I for review.</p>
+              {% if evidence_items %}
+                <h2>Evidence Items</h2>
+                <p>Manage the evidence items for {{ workspace.active_subarea }}.</p>
+              {% else %}
+                <h2>Required Documents and Instructions</h2>
+                <p>Prepare each item before submitting Area I for review.</p>
+              {% endif %}
             </div>
             <span>{{ workspace.requirements_count }} items</span>
           </div>
@@ -81,7 +100,7 @@
               <li>
                 <span class="requirement-number">{{ forloop.counter }}</span>
                 <div>
-                  <h3>{{ item.title }}</h3>
+                  <h3>{% if item.code %}{{ item.code }} — {% endif %}{{ item.title }}</h3>
                   <p>{{ item.description }}</p>
                 </div>
                 <em class="status-pill tone-{{ item.tone }}">{{ item.status }}</em>

@@ -1,5 +1,7 @@
-from django.views.generic import TemplateView
 from django.http import Http404
+from django.views.generic import TemplateView
+
+from .evidence_data import EVIDENCE_ITEMS
 
 
 AREA_SUBAREAS = {
@@ -337,13 +339,19 @@ class AreaDetailsView(TemplateView):
             raise Http404('Accreditation area not found')
 
         sub_areas = [
-            {**sub_area, 'progress': 0, 'tone': 'gold'}
+            {
+                **sub_area,
+                'slug': sub_area['code'].replace('.', '-'),
+                'progress': 0,
+                'tone': 'gold',
+            }
             for sub_area in area['subareas']
         ]
         context.update(
             {
                 'page_title': f"{area['code']} · {area['name']}",
                 'area': area,
+                'area_key': kwargs.get('area_key'),
                 'sub_areas': sub_areas,
                 'area_count': len(AREA_SUBAREAS),
                 'total_subarea_count': sum(
@@ -357,9 +365,81 @@ class AreaDetailsView(TemplateView):
 class SubmissionWorkspaceView(TemplateView):
     template_name = 'accreditation/submission_workspace.html'
 
+    def _get_subarea_workspace(self, area_key, subarea_key):
+        area = AREA_SUBAREAS.get(area_key)
+        if area is None:
+            raise Http404('Accreditation area not found')
+
+        subarea_code = subarea_key.replace('-', '.')
+        subarea = next(
+            (item for item in area['subareas'] if item['code'] == subarea_code),
+            None,
+        )
+        evidence_rows = EVIDENCE_ITEMS.get(subarea_code)
+        if subarea is None or evidence_rows is None:
+            raise Http404('Accreditation sub-area not found')
+
+        evidence_items = [
+            {
+                'code': code,
+                'title': title,
+                'description': 'Upload or link the supporting evidence for this item.',
+                'status': 'Not Started',
+                'tone': 'slate',
+            }
+            for code, title in evidence_rows
+        ]
+        sub_areas = [
+            {
+                **item,
+                'slug': item['code'].replace('.', '-'),
+                'status': 'Not Started',
+                'tone': 'slate',
+                'active': item['code'] == subarea_code,
+            }
+            for item in area['subareas']
+        ]
+        return {
+            'area_key': area_key,
+            'subarea_key': subarea_key,
+            'area_code': area['code'],
+            'area_name': area['name'],
+            'department': 'JMCFI Accreditation Office',
+            'program_head': 'Accreditation Coordinator',
+            'active_subarea': f"{subarea['code']} — {subarea['title']}",
+            'subarea_code': subarea['code'],
+            'requirements_count': len(evidence_items),
+            'status': 'Not Started',
+            'tone': 'slate',
+            'score': '',
+            'score_label': 'Not Evaluated',
+            'actual_situation': 'No evidence has been uploaded for this sub-area yet.',
+            'instructions': evidence_items,
+            'sub_areas': sub_areas,
+            'documents': [],
+            'remarks': [],
+            'missing_requirements': ['Evidence documents have not been uploaded for this sub-area yet.'],
+        }
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         area_key = kwargs.get('area_key', 'area-iii')
+        subarea_key = kwargs.get('subarea_key')
+        if subarea_key:
+            workspace = self._get_subarea_workspace(area_key, subarea_key)
+            context.update(
+                {
+                    'page_title': 'Submission Workspace',
+                    'workspace': workspace,
+                    'sub_areas': workspace['sub_areas'],
+                    'documents': workspace['documents'],
+                    'remarks': workspace['remarks'],
+                    'missing_requirements': workspace['missing_requirements'],
+                    'evidence_items': workspace['instructions'],
+                }
+            )
+            return context
+
         workspaces = {
             'area-i': {
                 'area_code': 'Area I',

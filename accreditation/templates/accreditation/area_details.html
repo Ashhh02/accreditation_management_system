@@ -25,7 +25,7 @@
     {% if sub_areas %}
       <section class="subarea-grid" aria-label="{{ area.code }} sub-areas">
         {% for sub_area in sub_areas %}
-          <article class="subarea-card">
+          <a class="subarea-card" href="{% url 'accreditation:submission_workspace_subarea' area_key sub_area.slug %}" aria-label="Open {{ sub_area.code }} submission workspace">
             <div class="subarea-card-top">
               <span class="subarea-code">{{ sub_area.code }}</span>
               <span class="subarea-index">{{ forloop.counter|stringformat:'02d' }}</span>
@@ -37,7 +37,7 @@
               </div>
               <strong class="subarea-percent tone-{{ sub_area.tone }}">{{ sub_area.progress }}%</strong>
             </div>
-          </article>
+          </a>
         {% endfor %}
       </section>
     {% else %}

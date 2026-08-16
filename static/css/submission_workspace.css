@@ -88,12 +88,21 @@
   border-bottom: 1px solid var(--color-border);
   background: transparent;
   color: var(--color-text);
+  box-sizing: border-box;
+  cursor: pointer;
+  font: inherit;
   text-align: left;
+  text-decoration: none;
+  width: 100%;
 }
 
 .subarea-item.is-active {
   background: #fff3f8;
   box-shadow: inset 4px 0 0 var(--maroon-700);
+}
+
+.subarea-item:not(.is-active):hover {
+  background: #fcfaf8;
 }
 
 .subarea-item span {
@@ -192,6 +201,11 @@
 .completion-pill.tone-rose {
   background: #ffe8ef;
   color: #bf164c;
+}
+
+.completion-pill.tone-slate {
+  background: #efebe7;
+  color: #6f665d;
 }
 
 .completion-pill .icon {
