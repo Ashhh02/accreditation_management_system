@@ -2,19 +2,6 @@
   width: 100%;
 }
 
-.communication-breadcrumb {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 46px;
-  color: var(--color-text-faint);
-  font-size: 14px;
-}
-
-.communication-breadcrumb strong {
-  color: var(--color-text);
-}
-
 .communication-header {
   margin-bottom: 24px;
 }
@@ -370,10 +357,6 @@
 }
 
 @media (max-width: 680px) {
-  .communication-breadcrumb {
-    margin-bottom: 28px;
-  }
-
   .chat-thread-header,
   .thread-actions {
     align-items: flex-start;
