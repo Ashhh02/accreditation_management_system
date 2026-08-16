@@ -7,6 +7,24 @@
 
 {% block content %}
   <div class="workspace-page">
+    <div class="workspace-breadcrumb">
+      <a href="{% url 'accreditation:levels_areas' %}">Level I</a>
+      <span>{% icon 'chevron-right' 'trail-icon' %}</span>
+      {% if workspace.area_key %}
+        <a href="{% url 'accreditation:area_details' workspace.area_key %}">{{ workspace.area_code }}</a>
+      {% else %}
+        <span>{{ workspace.area_code }}</span>
+      {% endif %}
+      <span>{% icon 'chevron-right' 'trail-icon' %}</span>
+      {% if workspace.subarea_code %}
+        <a href="{% url 'accreditation:area_details' workspace.area_key %}">{{ workspace.area_name }}</a>
+        <span>{% icon 'chevron-right' 'trail-icon' %}</span>
+        <strong>{{ workspace.subarea_code }}</strong>
+      {% else %}
+        <strong>{{ workspace.area_name }}</strong>
+      {% endif %}
+    </div>
+
     <header class="workspace-header">
       <div class="workspace-header-copy">
         <h1>{{ workspace.area_code }} - {{ workspace.area_name }}</h1>

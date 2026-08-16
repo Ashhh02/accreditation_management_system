@@ -2,19 +2,6 @@
   width: 100%;
 }
 
-.levels-breadcrumb {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 44px;
-  color: var(--color-text-faint);
-  font-size: 14px;
-}
-
-.levels-breadcrumb strong {
-  color: var(--color-text);
-}
-
 .levels-header {
   margin-bottom: 22px;
 }
@@ -328,10 +315,6 @@
 }
 
 @media (max-width: 760px) {
-  .levels-breadcrumb {
-    margin-bottom: 28px;
-  }
-
   .level-grid,
   .area-grid,
   .area-toolbar {

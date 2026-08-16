@@ -2,6 +2,33 @@
   width: 100%;
 }
 
+.workspace-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 46px;
+  color: var(--color-text-faint);
+  font-size: 14px;
+}
+
+.workspace-breadcrumb strong {
+  color: var(--color-text);
+}
+
+.workspace-breadcrumb a {
+  color: var(--color-text-faint);
+  text-decoration: none;
+}
+
+.workspace-breadcrumb a:hover {
+  color: var(--maroon-700);
+}
+
+.trail-icon {
+  width: 14px;
+  height: 14px;
+}
+
 .workspace-header {
   display: flex;
   align-items: flex-end;
