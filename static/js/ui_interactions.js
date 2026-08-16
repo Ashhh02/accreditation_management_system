@@ -352,6 +352,14 @@
     document.querySelectorAll('.workspace-action-btn').forEach(function (button) {
       button.addEventListener('click', function () {
         const action = button.dataset.workspaceAction;
+        if (action === 'submit') {
+          const actionGroup = button.closest('.workspace-actions');
+          if (actionGroup) {
+            const resubmitButton = actionGroup.querySelector('[data-workspace-action="resubmit"]');
+            if (resubmitButton) resubmitButton.hidden = false;
+            button.hidden = true;
+          }
+        }
         if (action && messages[action]) showToast(messages[action]);
       });
     });
