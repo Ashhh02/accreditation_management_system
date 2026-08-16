@@ -19,18 +19,8 @@
       <div>
         <div class="area-details-eyebrow">Level I · {{ area.code }}</div>
         <h1>{{ area.name }}</h1>
-        <p>{{ sub_areas|length }} sub-area{{ sub_areas|length|pluralize }} configured for this area.</p>
       </div>
-      <a class="area-details-back" href="{% url 'accreditation:levels_areas' %}">← Back to all areas</a>
     </header>
-
-    <section class="area-details-summary" aria-label="Accreditation structure summary">
-      <div>
-        <strong>Your app currently has {{ area_count }} areas, {{ total_subarea_count }} sub-areas.</strong>
-        <span>Select a sub-area container below to continue organizing its evidence.</span>
-      </div>
-      <span class="area-count-badge">{{ sub_areas|length }} Sub-Areas</span>
-    </section>
 
     {% if sub_areas %}
       <section class="subarea-grid" aria-label="{{ area.code }} sub-areas">
@@ -41,6 +31,12 @@
               <span class="subarea-index">{{ forloop.counter|stringformat:'02d' }}</span>
             </div>
             <h2>{{ sub_area.title }}</h2>
+            <div class="subarea-progress-row">
+              <div class="subarea-progress">
+                <span class="tone-{{ sub_area.tone }}" style="width: {{ sub_area.progress }}%;"></span>
+              </div>
+              <strong class="subarea-percent tone-{{ sub_area.tone }}">{{ sub_area.progress }}%</strong>
+            </div>
           </article>
         {% endfor %}
       </section>

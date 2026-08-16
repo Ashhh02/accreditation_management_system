@@ -25,10 +25,6 @@
 }
 
 .area-details-header {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 24px;
   margin-bottom: 24px;
 }
 
@@ -46,68 +42,18 @@
   line-height: 1.1;
 }
 
-.area-details-header p {
-  margin-top: 8px;
-  color: var(--color-text-muted);
-  font-size: 14px;
-}
-
-.area-details-back {
-  display: inline-flex;
-  align-items: center;
-  min-height: 38px;
-  padding: 0 15px;
-  border: 1px solid var(--color-border);
+.subarea-progress {
+  height: 5px;
+  overflow: hidden;
   border-radius: var(--radius-pill);
-  background: var(--color-surface);
-  color: var(--maroon-700);
-  font-size: 13px;
-  font-weight: 700;
-  text-decoration: none;
-  white-space: nowrap;
+  background: #e9e4dd;
 }
 
-.area-details-back:hover {
-  border-color: var(--maroon-700);
-}
-
-.area-details-summary {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 20px;
-  min-height: 78px;
-  margin-bottom: 24px;
-  padding: 18px 20px;
-  border: 1px solid #ead3dd;
-  border-radius: var(--radius-lg);
-  background: #fff7fa;
-}
-
-.area-details-summary div {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-}
-
-.area-details-summary strong {
-  color: var(--maroon-700);
-  font-size: 15px;
-}
-
-.area-details-summary span {
-  color: var(--color-text-muted);
-  font-size: 13px;
-}
-
-.area-count-badge {
-  flex-shrink: 0;
-  padding: 8px 12px;
-  border-radius: var(--radius-pill);
-  background: var(--maroon-700);
-  color: #fff !important;
-  font-size: 12px !important;
-  font-weight: 700;
+.subarea-progress span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: #d2aa17;
 }
 
 .subarea-grid {
@@ -166,6 +112,21 @@
   line-height: 1.4;
 }
 
+.subarea-progress-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 38px;
+  gap: 14px;
+  align-items: center;
+  margin-top: auto;
+  padding-top: 22px;
+}
+
+.subarea-percent {
+  color: #b4860d;
+  font-size: 12px;
+  text-align: right;
+}
+
 .subarea-empty-state {
   display: flex;
   flex-direction: column;
@@ -214,12 +175,6 @@
 @media (max-width: 680px) {
   .area-details-breadcrumb {
     margin-bottom: 28px;
-  }
-
-  .area-details-header,
-  .area-details-summary {
-    align-items: flex-start;
-    flex-direction: column;
   }
 
   .subarea-grid {

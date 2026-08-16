@@ -6,6 +6,7 @@ AREA_SUBAREAS = {
     'area-i': {
         'code': 'Area I',
         'name': 'Philosophy and Objectives',
+        'progress': 92,
         'subareas': [
             {'code': '1.1', 'title': 'Statement of Mission, Vision, Goals and Core Values of the Institution'},
             {'code': '1.2', 'title': 'Statement of College/Department Mission, Vision and Objectives'},
@@ -17,6 +18,7 @@ AREA_SUBAREAS = {
     'area-ii': {
         'code': 'Area II',
         'name': 'Faculty',
+        'progress': 78,
         'subareas': [
             {'code': '2.1', 'title': 'Academic Qualifications'},
             {'code': '2.2', 'title': 'Professional Performance'},
@@ -30,6 +32,7 @@ AREA_SUBAREAS = {
     'area-iii': {
         'code': 'Area III',
         'name': 'Instruction',
+        'progress': 85,
         'subareas': [
             {'code': '3.1', 'title': 'Program of Studies'},
             {'code': '3.2', 'title': 'Co-Curricular Activities'},
@@ -43,6 +46,7 @@ AREA_SUBAREAS = {
     'area-iv': {
         'code': 'Area IV',
         'name': 'Laboratories',
+        'progress': 60,
         'subareas': [
             {'code': '4.1', 'title': 'Facilities'},
             {'code': '4.2', 'title': 'Equipment and Supplies'},
@@ -54,6 +58,7 @@ AREA_SUBAREAS = {
     'area-v': {
         'code': 'Area V',
         'name': 'Research',
+        'progress': 72,
         'subareas': [
             {'code': '5.1', 'title': 'Orientation'},
             {'code': '5.2', 'title': 'Human Resources'},
@@ -68,6 +73,7 @@ AREA_SUBAREAS = {
     'area-vi': {
         'code': 'Area VI',
         'name': 'Library',
+        'progress': 88,
         'subareas': [
             {'code': '6.1', 'title': 'Administration'},
             {'code': '6.2', 'title': 'Human Resources'},
@@ -81,6 +87,7 @@ AREA_SUBAREAS = {
     'area-vii': {
         'code': 'Area VII',
         'name': 'Student Services',
+        'progress': 74,
         'subareas': [
             {'code': '7.1', 'title': 'Administration'},
             {'code': '7.2', 'title': 'Statement of Purpose'},
@@ -93,6 +100,7 @@ AREA_SUBAREAS = {
     'area-viii': {
         'code': 'Area VIII',
         'name': 'SOCE',
+        'progress': 58,
         'subareas': [
             {'code': '8.1', 'title': 'Knowledge of the Community'},
             {'code': '8.2', 'title': 'Community Relations'},
@@ -104,6 +112,7 @@ AREA_SUBAREAS = {
     'area-ix': {
         'code': 'Area IX',
         'name': 'Physical Plant and Facilities',
+        'progress': 81,
         'subareas': [
             {'code': '9.1', 'title': 'Site'},
             {'code': '9.2', 'title': 'Campus'},
@@ -118,6 +127,7 @@ AREA_SUBAREAS = {
     'area-x': {
         'code': 'Area X',
         'name': 'Organization and Management',
+        'progress': 76,
         'subareas': [
             {'code': '10.1', 'title': 'Administrative Organization'},
             {'code': '10.2', 'title': 'Academic Administration'},
@@ -133,6 +143,7 @@ AREA_SUBAREAS = {
     'area-xi': {
         'code': 'Area XI',
         'name': 'Employability',
+        'progress': 69,
         'subareas': [],
     },
 }
@@ -325,11 +336,15 @@ class AreaDetailsView(TemplateView):
         if area is None:
             raise Http404('Accreditation area not found')
 
+        sub_areas = [
+            {**sub_area, 'progress': 0, 'tone': 'gold'}
+            for sub_area in area['subareas']
+        ]
         context.update(
             {
                 'page_title': f"{area['code']} · {area['name']}",
                 'area': area,
-                'sub_areas': area['subareas'],
+                'sub_areas': sub_areas,
                 'area_count': len(AREA_SUBAREAS),
                 'total_subarea_count': sum(
                     len(area_data['subareas']) for area_data in AREA_SUBAREAS.values()
