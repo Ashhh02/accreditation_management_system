@@ -19,8 +19,6 @@
           <input type="search" placeholder="Search conversations...">
         </div>
 
-        <div class="pinned-label">Pinned</div>
-
         <div class="conversation-list">
           {% for conversation in conversations %}
             <button type="button" class="conversation-item{% if conversation.active %} is-active{% endif %}">
@@ -59,11 +57,6 @@
             <button type="button" aria-label="Thread options">...</button>
           </div>
         </header>
-
-        <div class="pinned-note">
-          <strong>Pinned:</strong>
-          <span>"Please ensure SPLs are included. Deadline: July 25."</span>
-        </div>
 
         <section class="message-list">
           {% for message in messages %}

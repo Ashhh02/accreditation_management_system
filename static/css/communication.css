@@ -62,16 +62,6 @@
   color: var(--color-text-faint);
 }
 
-.pinned-label {
-  padding: 10px 12px 8px;
-  border-top: 1px solid var(--color-border);
-  color: var(--color-text-faint);
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-
 .conversation-list {
   display: flex;
   flex-direction: column;
@@ -230,16 +220,6 @@
   border: 0;
   background: transparent;
   color: var(--color-text-faint);
-}
-
-.pinned-note {
-  margin: 16px 22px 0;
-  padding: 9px 12px;
-  border: 1px solid #ead67a;
-  border-radius: 10px;
-  background: #fff8cb;
-  color: #9a710a;
-  font-size: 12px;
 }
 
 .message-list {
