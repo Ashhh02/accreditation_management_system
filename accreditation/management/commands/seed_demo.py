@@ -147,7 +147,7 @@ class Command(BaseCommand):
             profile.department = departments[department_code]
             profile.approval_status = UserProfile.APPROVED
             profile.is_demo_account = True
-            profile.must_change_password = True
+            profile.must_change_password = False
             profile.save()
 
             assignment, _ = RoleAssignment.objects.update_or_create(
@@ -168,4 +168,4 @@ class Command(BaseCommand):
             f'Seeded {len(roles)} internal roles, {len(departments)} departments/programs, '
             f'{len(areas)} areas, and {len(DEMO_USERS)} demo accounts.'
         ))
-        self.stdout.write('Demo accounts are marked for password change and use the development-only password 123.')
+        self.stdout.write('Demo accounts use the development-only password 123 without forced first-login password changes.')

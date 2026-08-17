@@ -41,8 +41,6 @@ class PortalLoginView(LoginView):
         else:
             self.request.session.set_expiry(0)
         profile = getattr(self.request.user, 'profile', None)
-        if profile and profile.must_change_password:
-            return redirect('accounts:change_password')
         if profile and not profile.active_assignment_id and approved_assignments(self.request.user).count() > 1:
             return redirect(f'{reverse("accounts:select_role")}?next={self.get_success_url()}')
         return response

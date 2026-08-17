@@ -4,7 +4,7 @@ JMCFI AMS DEVELOPMENT DEMO ACCOUNTS
 These credentials are for local development/demo mode only.
 Enable demo mode with: DEMO_MODE=True
 All demo accounts use the temporary password: 123
-Users must change this password after their first login.
+First-login password changes are currently disabled.
 Do not use these credentials in production.
 
 ROLE                USERNAME                 EMAIL                              DEPARTMENT / PROGRAM
