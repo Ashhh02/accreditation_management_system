@@ -1,0 +1,18 @@
+JMCFI AMS DEVELOPMENT DEMO ACCOUNTS
+====================================
+
+These credentials are for local development/demo mode only.
+Enable demo mode with: DEMO_MODE=True
+All demo accounts use the temporary password: 123
+Users must change this password after their first login.
+Do not use these credentials in production.
+
+ROLE                USERNAME                 EMAIL                              DEPARTMENT / PROGRAM
+--------------------------------------------------------------------------------------------------------
+Superadmin          demo-superadmin          superadmin@jmcfi.edu.ph            QA Office
+Admin               demo-admin               admin@jmcfi.edu.ph                 QA Office
+QA                  demo-qa                  qa@jmcfi.edu.ph                    QA Office
+Accreditation Head  demo-accreditation-head  accreditation.head@jmcfi.edu.ph   QA Office
+Program Head        demo-program-head       program.head@jmcfi.edu.ph          Bachelor of Science in Civil Engineering
+Dean                demo-dean                dean@jmcfi.edu.ph                  College of Engineering
+Area Chair          demo-area-chair          area.chair@jmcfi.edu.ph            College of Engineering
