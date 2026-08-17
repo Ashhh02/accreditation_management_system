@@ -38,13 +38,13 @@ DEPARTMENT_DEFINITIONS = [
 
 
 DEMO_USERS = [
-    ('demo-superadmin', 'superadmin@jmcfi.edu.ph', 'Demo', 'Superadmin', 'SUPERADMIN', 'QA'),
-    ('demo-admin', 'admin@jmcfi.edu.ph', 'Demo', 'Admin', 'ADMIN', 'QA'),
-    ('demo-qa', 'qa@jmcfi.edu.ph', 'Demo', 'QA', 'QA', 'QA'),
-    ('demo-accreditation-head', 'accreditation.head@jmcfi.edu.ph', 'Demo', 'Accreditation Head', 'ACCREDITATION_HEAD', 'QA'),
-    ('demo-program-head', 'program.head@jmcfi.edu.ph', 'Demo', 'Program Head', 'PROGRAM_HEAD', 'ENG-BSCIV'),
-    ('demo-dean', 'dean@jmcfi.edu.ph', 'Demo', 'Dean', 'DEAN', 'ENG'),
-    ('demo-area-chair', 'area.chair@jmcfi.edu.ph', 'Demo', 'Area Chair', 'AREA_CHAIR', 'ENG'),
+    ('superadmin', 'superadmin@jmcfi.edu.ph', 'Demo', 'Superadmin', 'SUPERADMIN', 'QA'),
+    ('admin', 'admin@jmcfi.edu.ph', 'Demo', 'Admin', 'ADMIN', 'QA'),
+    ('qa', 'qa@jmcfi.edu.ph', 'Demo', 'QA', 'QA', 'QA'),
+    ('accreditation-head', 'accreditation.head@jmcfi.edu.ph', 'Demo', 'Accreditation Head', 'ACCREDITATION_HEAD', 'QA'),
+    ('program-head', 'program.head@jmcfi.edu.ph', 'Demo', 'Program Head', 'PROGRAM_HEAD', 'ENG-BSCIV'),
+    ('dean', 'dean@jmcfi.edu.ph', 'Demo', 'Dean', 'DEAN', 'ENG'),
+    ('area-chair', 'area.chair@jmcfi.edu.ph', 'Demo', 'Area Chair', 'AREA_CHAIR', 'ENG'),
 ]
 
 
@@ -133,7 +133,18 @@ class Command(BaseCommand):
         User = get_user_model()
         demo_assignments = {}
         for username, email, first_name, last_name, role_code, department_code in DEMO_USERS:
-            user, _ = User.objects.get_or_create(username=username, defaults={'email': email})
+            user = User.objects.filter(username=username).first()
+            if user is None:
+                # Rename accounts created by older versions of the demo seeder
+                # instead of leaving duplicate demo accounts behind.
+                user = User.objects.filter(
+                    username=f'demo-{username}',
+                    profile__is_demo_account=True,
+                ).first()
+                if user is not None:
+                    user.username = username
+            if user is None:
+                user = User.objects.create_user(username=username, email=email)
             user.email = email
             user.first_name = first_name
             user.last_name = last_name
