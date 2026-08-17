@@ -1,0 +1,42 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Account pending approval · JMCFI AMS</title>
+  <link rel="stylesheet" href="{% static 'css/tokens.css' %}">
+  <link rel="stylesheet" href="{% static 'css/base.css' %}">
+  <link rel="stylesheet" href="{% static 'css/login.css' %}">
+</head>
+<body class="login-body">
+  <main class="login-page">
+    <section class="login-panel" aria-labelledby="pending-title">
+      <div class="login-panel-inner">
+        <a class="login-brand" href="{% url 'login' %}">
+          <img src="{% static 'images/jmcfi-logo.png' %}" alt="JMCFI logo">
+          <span><strong>JMCFI AMS</strong><small>Accreditation Portal</small></span>
+        </a>
+        <div class="login-card login-success-card">
+          <span class="login-success-icon">✓</span>
+          <div class="login-heading">
+            <span class="login-eyebrow">Request received</span>
+            <h1 id="pending-title">Account pending approval</h1>
+            <p>Your request was saved. QA, Admin, or Superadmin must approve your role and department before you can sign in.</p>
+          </div>
+          <a class="login-submit login-submit-link" href="{% url 'login' %}">Return to sign in <span class="login-submit-arrow">→</span></a>
+        </div>
+      </div>
+    </section>
+    <aside class="login-visual" aria-label="JMCFI accreditation portal">
+      <div class="login-visual-overlay"></div>
+      <div class="login-visual-top">QUALITY ASSURANCE OFFICE</div>
+      <div class="login-visual-content">
+        <span class="login-visual-kicker">Workflow starts with trust</span>
+        <h2>Approved access keeps evidence accountable.</h2>
+        <p>Role and department assignments determine what each person can prepare, review, and approve.</p>
+      </div>
+    </aside>
+  </main>
+</body>
+</html>

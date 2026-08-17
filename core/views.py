@@ -1,77 +1,75 @@
+from django.contrib import messages
+from django.shortcuts import redirect
+from django.urls import reverse
+from django.utils.timesince import timesince
 from django.views.generic import TemplateView
 
+from .access import accessible_submissions, can_approve_accounts, is_admin_user
+from .mixins import ApprovedUserRequiredMixin
+from .models import AuditLog, Notification
 
-class NotificationsView(TemplateView):
+
+NOTIFICATION_PRESENTATION = {
+    'revision': ('Revision Requested', 'alert', 'rose'),
+    'submission': ('Evidence Submitted', 'file', 'blue'),
+    'review': ('Review Update', 'check', 'green'),
+    'account': ('Account Update', 'users', 'green'),
+    'deadline': ('Deadline Reminder', 'clock', 'gold'),
+    'system': ('System Notice', 'bolt', 'maroon'),
+}
+
+
+class NotificationsView(ApprovedUserRequiredMixin, TemplateView):
     template_name = 'core/notifications.html'
+
+    def post(self, request, *args, **kwargs):
+        if request.POST.get('action') == 'mark_all_read':
+            Notification.objects.filter(user=request.user, is_read=False).update(is_read=True)
+            messages.success(request, 'All notifications marked as read.')
+        else:
+            Notification.objects.filter(user=request.user, pk=request.POST.get('notification_id')).update(is_read=True)
+        return redirect('core:notifications')
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        notifications = [
-            {
-                'title': 'Revision Requested',
-                'message': 'Dr. A. Villanueva requested revisions for Area II faculty evidence under the College of Engineering.',
-                'time_label': '10 min ago',
-                'icon': 'alert',
-                'tone': 'rose',
-                'unread': True,
-            },
-            {
-                'title': 'Evidence Submitted',
-                'message': 'Prof. J. Reyes submitted supporting documents for Area III instruction.',
-                'time_label': '1 hour ago',
-                'icon': 'file',
-                'tone': 'blue',
-                'unread': True,
-            },
-            {
-                'title': 'AI Recommendation',
-                'message': 'The system flagged Area VIII with a readiness gap and recommends early follow-up before the deadline window narrows.',
-                'time_label': '2 hours ago',
-                'icon': 'bolt',
-                'tone': 'maroon',
-                'unread': True,
-            },
-            {
-                'title': 'Deadline Reminder',
-                'message': 'Level I preliminary submission for Student Services is due in 11 days and still needs two pending attachments.',
-                'time_label': '4 hours ago',
-                'icon': 'clock',
-                'tone': 'gold',
-                'unread': True,
-            },
-            {
-                'title': 'User Approved',
-                'message': 'Prof. Ana Gomez has been approved and can now access the accreditation workspace.',
-                'time_label': 'yesterday',
-                'icon': 'users',
-                'tone': 'green',
-                'unread': False,
-            },
-            {
-                'title': 'Overdue Alert',
-                'message': 'Area VII Student Services now has three overdue submissions past the internal review target.',
-                'time_label': 'yesterday',
-                'icon': 'alert',
-                'tone': 'rose',
-                'unread': False,
-            },
-            {
-                'title': 'Report Generated',
-                'message': 'The monthly compliance summary for July 2026 is ready for review and export.',
-                'time_label': 'July 13',
-                'icon': 'clipboard',
-                'tone': 'slate',
-                'unread': False,
-            },
-        ]
+        rows = []
+        notifications = Notification.objects.filter(user=self.request.user).select_related('submission')
+        for notification in notifications:
+            fallback_title, icon, tone = NOTIFICATION_PRESENTATION.get(
+                notification.kind,
+                (notification.title, 'bell', 'slate'),
+            )
+            rows.append({
+                'id': notification.id,
+                'title': notification.title or fallback_title,
+                'message': notification.message,
+                'time_label': f'{timesince(notification.created_at)} ago',
+                'icon': icon,
+                'tone': tone,
+                'unread': not notification.is_read,
+                'submission_url': reverse('accreditation:evidence_detail', args=[notification.submission_id]) if notification.submission_id else '',
+            })
+        unread_total = sum(1 for item in rows if item['unread'])
+        context.update({
+            'page_title': 'Notifications',
+            'notifications': rows,
+            'unread_total': unread_total,
+            'total_notifications': len(rows),
+        })
+        return context
 
-        unread_total = sum(1 for item in notifications if item['unread'])
-        context.update(
-            {
-                'page_title': 'Notifications',
-                'notifications': notifications,
-                'unread_total': unread_total,
-                'total_notifications': len(notifications),
-            }
-        )
+
+class AuditHistoryView(ApprovedUserRequiredMixin, TemplateView):
+    template_name = 'core/audit_history.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        if is_admin_user(self.request.user) or can_approve_accounts(self.request.user):
+            events = AuditLog.objects.all()
+        else:
+            events = AuditLog.objects.filter(submission__in=accessible_submissions(self.request.user))
+        context.update({
+            'page_title': 'Audit History',
+            'events': events.select_related('actor', 'submission__requirement', 'submission__department')[:200],
+        })
         return context

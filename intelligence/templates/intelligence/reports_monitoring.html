@@ -10,7 +10,7 @@
     <header class="reports-header">
       <div>
         <h1>Reports & Monitoring</h1>
-        <p>Academic Year 2025-2026 · PACUCOA Accreditation Cycle · As of Jul 14, 2026</p>
+        <p>{% if cycle %}Academic Year {{ cycle.academic_year }} · {{ cycle.name }}{% else %}No active accreditation cycle configured{% endif %}</p>
       </div>
 
       <div class="report-actions">
@@ -61,7 +61,7 @@
           <article class="report-chart-card">
             <div class="chart-head">
               <h2>Area Readiness Radar</h2>
-              <p>Level I - All 11 Areas</p>
+              <p>Level I · Configured areas</p>
             </div>
 
             <div class="radar-chart" aria-label="Area readiness radar chart">

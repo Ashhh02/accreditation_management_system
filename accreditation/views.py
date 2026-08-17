@@ -1,6 +1,8 @@
 from django.http import Http404
 from django.views.generic import TemplateView
 
+from core.mixins import ApprovedUserRequiredMixin
+
 from .evidence_data import EVIDENCE_ITEMS
 
 
@@ -151,7 +153,7 @@ AREA_SUBAREAS = {
 }
 
 
-class LevelsAreasView(TemplateView):
+class LevelsAreasView(ApprovedUserRequiredMixin, TemplateView):
     template_name = 'accreditation/levels_areas.html'
 
     def get_context_data(self, **kwargs):
@@ -329,7 +331,7 @@ class LevelsAreasView(TemplateView):
         return context
 
 
-class AreaDetailsView(TemplateView):
+class AreaDetailsView(ApprovedUserRequiredMixin, TemplateView):
     template_name = 'accreditation/area_details.html'
 
     def get_context_data(self, **kwargs):
@@ -362,7 +364,7 @@ class AreaDetailsView(TemplateView):
         return context
 
 
-class SubmissionWorkspaceView(TemplateView):
+class SubmissionWorkspaceView(ApprovedUserRequiredMixin, TemplateView):
     template_name = 'accreditation/submission_workspace.html'
 
     def _get_subarea_workspace(self, area_key, subarea_key):
@@ -524,7 +526,7 @@ class SubmissionWorkspaceView(TemplateView):
         return context
 
 
-class ReviewWorkflowView(TemplateView):
+class ReviewWorkflowView(ApprovedUserRequiredMixin, TemplateView):
     template_name = 'accreditation/review_workflow.html'
 
     def get_context_data(self, **kwargs):

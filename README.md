@@ -1,38 +1,21 @@
-<!-- # JMCFI AMS — Accreditation Portal (UI scaffold)
+# JMCFI AMS
 
-Django project reproducing the AMS dashboard UI. This is the front-end
-shell only — no auth, no models, no real data yet — built so features
-can be added app-by-app without restructuring later.
+Internal accreditation evidence management system built with Django and SQLite for development.
 
-## Structure
+## Run locally
 
-```
-config/            project settings, root urls.py
-core/               shared nav data (context_processors.py), icon set
-                     & active-link template tags, notifications stub
-dashboard/          main dashboard: KPIs, AI alert, trend + readiness charts
-accreditation/      Levels & Areas / Submission Workspace / Review Workflow (stubs)
-resources/          Document Repository / Communication (stubs)
-intelligence/       Reports & Monitoring / Smart Companion (stubs)
-accounts/           User Management / Settings & Profile (stubs)
-templates/          base.html + shared partials (sidebar, topbar, placeholder)
-static/css/         tokens.css (design tokens) → base.css → layout.css → dashboard.css
+```bash
+./.venv/bin/python manage.py migrate
+DEMO_MODE=True ./.venv/bin/python manage.py seed_demo
+DEMO_MODE=True ./.venv/bin/python manage.py runserver 127.0.0.1:8000
 ```
 
-Each app owns its own `urls.py`, `views.py`, and `templates/<app_name>/`
-directory (Django's namespaced-template convention), so templates never
-collide as the project grows.
+Open <http://127.0.0.1:8000/login/>.
 
-The sidebar navigation is defined once, in `core/context_processors.py`,
-and rendered from that data in every template — add a nav item there
-and it appears (with correct active-state highlighting) everywhere.
+`seed_demo` is available only when `DEMO_MODE` is enabled (enabled by default while `DEBUG=True`). It creates internal demo accounts for Superadmin, Admin, QA, Accreditation Head, Program Head, Dean, and Area Chair. Their development password is `123`; every demo account is marked to require a password change. Set `DEBUG=False` or `DEMO_MODE=False` in production so demo seeding and demo authentication are disabled.
 
-## Run it
+## Workflow
 
-```
-pip install django
-python manage.py migrate
-python manage.py runserver
-```
+Evidence is stored as Cycle → Level → Area → Sub-area → Requirement → Submission. Program Heads create versions and supporting files, then submissions move through Dean, Area Chair, and QA/Accreditation Head review. Revision requests retain the reviewer, remarks, files, versions, comments, notifications, and audit records.
 
-Visit http://127.0.0.1:8000/ -->
+All important workflow data is stored in the database. Browser local storage is not used for evidence, submissions, approvals, or review decisions.

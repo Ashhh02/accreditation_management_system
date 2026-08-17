@@ -22,7 +22,7 @@
         <div class="conversation-list">
           {% for conversation in conversations %}
             <button type="button" class="conversation-item{% if conversation.active %} is-active{% endif %}">
-              <span class="conversation-avatar{% if conversation.initials == 'A3' or conversation.initials == 'EX' %} is-gold{% endif %}">
+              <span class="conversation-avatar{% if conversation.initials == 'A3' %} is-gold{% endif %}">
                 {{ conversation.initials }}
                 {% if conversation.online %}<i></i>{% endif %}
               </span>

@@ -1,146 +1,157 @@
+import math
+from datetime import timedelta
+
+from django.utils import timezone
 from django.views.generic import TemplateView
 
+from accreditation.models import AccreditationCycle, AccreditationLevel, EvidenceRequirement, EvidenceSubmission
+from core.access import accessible_submissions, department_scope_ids
+from core.mixins import ApprovedUserRequiredMixin
+from core.models import Department
 
-class ReportsMonitoringView(TemplateView):
+
+COMPLETED_STATUSES = {EvidenceSubmission.COMPLIED, EvidenceSubmission.CLOSED}
+ACTIVE_REVIEW_STATUSES = {
+    EvidenceSubmission.UNDER_DEAN_REVIEW,
+    EvidenceSubmission.UNDER_AREA_CHAIR_REVIEW,
+    EvidenceSubmission.UNDER_QA_REVIEW,
+}
+
+
+def _points(values, max_value=36):
+    x_values = [30, 120, 210, 300, 390, 480]
+    return ' '.join(f'{x},{220 - round(min(value, max_value) / max_value * 172)}' for x, value in zip(x_values, values))
+
+
+class ReportsMonitoringView(ApprovedUserRequiredMixin, TemplateView):
     template_name = 'intelligence/reports_monitoring.html'
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context.update(
-            {
-                'page_title': 'Reports & Monitoring',
-                'insights': [
-                    {
-                        'message': 'Area VIII (SOCE) is the most critical gap - 45% readiness with 20 days to deadline. Immediate document uploads required.',
-                        'tone': 'rose',
-                        'icon': 'alert',
-                    },
-                    {
-                        'message': 'Revision rate has decreased 75% over 6 weeks, indicating improving submission quality across departments.',
-                        'tone': 'green',
-                        'icon': 'trend-up',
-                    },
-                    {
-                        'message': 'College of Arts & Sciences has the lowest compliance rate (65%). 3 areas still have zero submissions.',
-                        'tone': 'rose',
-                        'icon': 'alert',
-                    },
-                    {
-                        'message': 'Recommend deploying Area Chair to College of Engineering for Areas IV and VII before July 20 deadline.',
-                        'tone': 'gold',
-                        'icon': 'alert',
-                    },
-                ],
-                'kpis': [
-                    {'value': '74.3%', 'label': 'Overall Readiness', 'delta': '+5.2%', 'tone': 'green'},
-                    {'value': '247', 'label': 'Total Submissions', 'delta': '+18 this week', 'tone': 'green'},
-                    {'value': '73.7%', 'label': 'Compliance Rate', 'delta': '+3.1%', 'tone': 'green'},
-                    {'value': '12', 'label': 'Overdue Items', 'delta': '-4 from last week', 'tone': 'rose'},
-                ],
-                'departments': [
-                    {
-                        'name': 'Engineering',
-                        'submitted': 42,
-                        'compiled': 33,
-                        'compliance': 78,
-                        'status': 'At Risk',
-                        'tone': 'gold',
-                    },
-                    {
-                        'name': 'Business',
-                        'submitted': 38,
-                        'compiled': 32,
-                        'compliance': 85,
-                        'status': 'On Track',
-                        'tone': 'green',
-                    },
-                    {
-                        'name': 'Education',
-                        'submitted': 35,
-                        'compiled': 25,
-                        'compliance': 72,
-                        'status': 'At Risk',
-                        'tone': 'gold',
-                    },
-                    {
-                        'name': 'Nursing',
-                        'submitted': 44,
-                        'compiled': 40,
-                        'compliance': 91,
-                        'status': 'On Track',
-                        'tone': 'green',
-                    },
-                    {
-                        'name': 'Arts & Sci',
-                        'submitted': 31,
-                        'compiled': 20,
-                        'compliance': 65,
-                        'status': 'Critical',
-                        'tone': 'rose',
-                    },
-                ],
-                'radar_points': '145,20 198,48 225,94 202,148 170,188 112,205 78,158 32,138 42,84 92,56',
-                'trend_approval_points': '30,220 120,182 210,158 300,132 390,92 480,48',
-                'trend_revision_points': '30,152 120,170 210,188 300,202 390,210 480,218',
-            }
+        user = self.request.user
+        cycle = AccreditationCycle.objects.filter(is_active=True).first()
+        submissions = accessible_submissions(user)
+        total = submissions.count()
+        completed = submissions.filter(status__in=COMPLETED_STATUSES).count()
+        revisions = submissions.filter(status=EvidenceSubmission.NEEDS_REVISION).count()
+        pending = submissions.filter(status__in=ACTIVE_REVIEW_STATUSES).count()
+        readiness = round(completed * 100 / total, 1) if total else 0
+        compliance = round(completed * 100 / total, 1) if total else 0
+
+        departments = []
+        for department in Department.objects.filter(is_active=True, kind=Department.DEPARTMENT).order_by('name'):
+            scoped = submissions.filter(department_id__in=department_scope_ids(department))
+            submitted = scoped.exclude(status=EvidenceSubmission.DRAFT).count()
+            compiled = scoped.filter(status__in=COMPLETED_STATUSES).count()
+            if not submitted and not scoped.exists():
+                continue
+            rate = round(compiled * 100 / submitted) if submitted else 0
+            departments.append({
+                'name': department.name,
+                'submitted': submitted,
+                'compiled': compiled,
+                'compliance': rate,
+                'status': 'On Track' if rate >= 80 else 'At Risk' if rate >= 50 else 'Critical',
+                'tone': 'green' if rate >= 80 else 'gold' if rate >= 50 else 'rose',
+            })
+
+        level = AccreditationLevel.objects.filter(cycle=cycle).filter(code='I').first() if cycle else None
+        radar_values = []
+        if level:
+            for area in level.areas.all():
+                required = EvidenceRequirement.objects.filter(area=area).count()
+                done = submissions.filter(requirement__area=area, status__in=COMPLETED_STATUSES).count()
+                radar_values.append(round(done * 100 / required) if required else 0)
+        radar_values = (radar_values + [0] * 11)[:11]
+        radar_points = ' '.join(
+            f'{130 + round(105 * value / 100 * math.cos(2 * math.pi * index / 11 - math.pi / 2)):.0f},{125 + round(105 * value / 100 * math.sin(2 * math.pi * index / 11 - math.pi / 2)):.0f}'
+            for index, value in enumerate(radar_values)
         )
+
+        recent = timezone.now()
+        weekly_submitted = []
+        weekly_revisions = []
+        for week in range(6, 0, -1):
+            start = recent - timedelta(days=week * 7)
+            end = start + timedelta(days=7)
+            weekly_submitted.append(submissions.filter(created_at__gte=start, created_at__lt=end).count())
+            weekly_revisions.append(submissions.filter(
+                reviews__created_at__gte=start,
+                reviews__created_at__lt=end,
+                reviews__decision='REQUEST_REVISION',
+            ).distinct().count())
+        context.update({
+            'page_title': 'Reports & Monitoring',
+            'cycle': cycle,
+            'insights': [
+                {
+                    'message': f'{readiness}% of visible evidence is complied or closed across the current access scope.',
+                    'tone': 'green' if readiness >= 80 else 'gold',
+                    'icon': 'trend-up',
+                },
+                {
+                    'message': f'{pending} evidence items are currently waiting for an assigned internal reviewer.',
+                    'tone': 'gold',
+                    'icon': 'clock',
+                },
+                {
+                    'message': f'{revisions} evidence items are in revision and have been returned to their Program Heads.',
+                    'tone': 'rose' if revisions else 'green',
+                    'icon': 'alert' if revisions else 'check',
+                },
+            ],
+            'kpis': [
+                {'value': f'{readiness}%', 'label': 'Overall Readiness', 'delta': f'{total} visible submissions', 'tone': 'green' if readiness >= 80 else 'gold'},
+                {'value': total, 'label': 'Total Submissions', 'delta': f'{pending} pending review', 'tone': 'green'},
+                {'value': f'{compliance}%', 'label': 'Compliance Rate', 'delta': f'{completed} complied or closed', 'tone': 'green' if compliance >= 80 else 'gold'},
+                {'value': revisions, 'label': 'Needs Revision', 'delta': 'Returned for correction', 'tone': 'rose' if revisions else 'green'},
+            ],
+            'departments': departments,
+            'radar_points': radar_points,
+            'trend_approval_points': _points(weekly_submitted),
+            'trend_revision_points': _points(weekly_revisions),
+        })
         return context
 
 
-class SmartCompanionView(TemplateView):
+class SmartCompanionView(ApprovedUserRequiredMixin, TemplateView):
     template_name = 'intelligence/smart_companion.html'
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context.update(
-            {
-                'page_title': 'Smart Companion',
-                'companion_insights': [
-                    {
-                        'title': 'Critical Areas',
-                        'description': 'Area VII, Area VIII need immediate attention',
-                        'tone': 'rose',
-                    },
-                    {
-                        'title': 'Upcoming Deadline',
-                        'description': '20 days until Level I preliminary submission',
-                        'tone': 'gold',
-                    },
-                    {
-                        'title': 'Overall Readiness',
-                        'description': '74.3% - 5.2% improvement this week',
-                        'tone': 'green',
-                    },
-                ],
-                'sample_prompts': [
-                    {
-                        'title': 'Evidence Help',
-                        'description': 'Find missing files, weak submissions, and next upload priorities.',
-                        'prompts': [
-                            'What documents are missing for Area II?',
-                            'Which evidence should we upload first?',
-                            'Check if Area III is ready for review.',
-                        ],
-                    },
-                    {
-                        'title': 'Readiness Review',
-                        'description': 'Summarize gaps and explain what needs follow-up this week.',
-                        'prompts': [
-                            'Summarize critical areas for Level I.',
-                            'Explain why Area VIII is at risk.',
-                            'Show departments with low compliance.',
-                        ],
-                    },
-                    {
-                        'title': 'Deadline Planning',
-                        'description': 'Turn accreditation deadlines into concrete action steps.',
-                        'prompts': [
-                            'What should we finish before July 25?',
-                            'Create a follow-up plan for overdue items.',
-                            'Recommend next actions for QA Office.',
-                        ],
-                    },
-                ],
-            }
-        )
+        submissions = accessible_submissions(self.request.user)
+        revision_count = submissions.filter(status=EvidenceSubmission.NEEDS_REVISION).count()
+        pending_count = submissions.filter(status__in=ACTIVE_REVIEW_STATUSES).count()
+        context.update({
+            'page_title': 'Smart Companion',
+            'companion_insights': [
+                {
+                    'title': 'Revision Queue',
+                    'description': f'{revision_count} visible evidence items need correction.',
+                    'tone': 'rose' if revision_count else 'green',
+                },
+                {
+                    'title': 'Pending Review',
+                    'description': f'{pending_count} items are moving through internal review.',
+                    'tone': 'gold',
+                },
+                {
+                    'title': 'Database Scope',
+                    'description': 'Responses use the evidence and review records available to your role.',
+                    'tone': 'green',
+                },
+            ],
+            'sample_prompts': [
+                {
+                    'title': 'Evidence Help',
+                    'description': 'Find missing files and weak submissions.',
+                    'prompts': ['Which evidence needs revision?', 'Which documents are missing?', 'Check the next review stage.'],
+                },
+                {
+                    'title': 'Readiness Review',
+                    'description': 'Summarize current gaps.',
+                    'prompts': ['Summarize visible readiness.', 'Show pending reviewer work.', 'Show complied evidence.'],
+                },
+            ],
+        })
         return context

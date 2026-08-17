@@ -254,6 +254,89 @@
   font-weight: 700;
 }
 
+.manage-btn-muted {
+  background: #f7f3f0;
+  color: var(--color-text-muted);
+}
+
+.user-action-stack {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.user-action-stack form {
+  margin: 0;
+}
+
+.user-identity small {
+  display: block;
+  margin-top: 3px;
+  color: var(--color-text-faint);
+  font-size: 10px;
+}
+
+.assignment-card {
+  margin-top: 20px;
+  padding: 22px;
+}
+
+.assignment-header {
+  margin-bottom: 18px;
+}
+
+.assignment-header h2 {
+  font-size: 16px;
+}
+
+.assignment-header p {
+  margin-top: 5px;
+  color: var(--color-text-muted);
+  font-size: 12px;
+}
+
+.assignment-form {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
+  gap: 14px;
+  align-items: end;
+}
+
+.assignment-form label {
+  display: grid;
+  gap: 7px;
+  color: var(--color-text);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.assignment-form select {
+  min-height: 40px;
+  padding: 0 10px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  background: #fffdfb;
+  color: var(--color-text);
+  font: inherit;
+}
+
+.assignment-form em {
+  color: var(--color-danger, #a43a52);
+  font-size: 11px;
+}
+
+@media (max-width: 1100px) {
+  .assignment-form {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 680px) {
+  .assignment-form {
+    grid-template-columns: 1fr;
+  }
+}
+
 .manage-btn:hover {
   background: var(--maroon-100);
 }

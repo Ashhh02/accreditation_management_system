@@ -150,6 +150,8 @@
               <div class="deadline-flag">{% icon 'alert' %}</div>
             {% endif %}
           </div>
+        {% empty %}
+          <p class="empty-copy">No deadlines configured for the active cycle.</p>
         {% endfor %}
       </div>
     </div>

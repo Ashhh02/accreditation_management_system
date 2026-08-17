@@ -12,6 +12,12 @@
         <h1>{{ page_title }}</h1>
         <p class="content-meta">{{ unread_total }} unread · {{ total_notifications }} total</p>
       </div>
+      {% if unread_total %}
+        <form method="post">
+          {% csrf_token %}
+          <button type="submit" name="action" value="mark_all_read" class="btn btn-outline">Mark all as read</button>
+        </form>
+      {% endif %}
     </div>
 
     <div class="notification-filters">
@@ -24,7 +30,7 @@
     <div class="notification-main">
       <div class="notification-list-card">
         {% for item in notifications %}
-          <article class="notification-row{% if item.unread %} is-unread{% endif %}">
+            <article class="notification-row{% if item.unread %} is-unread{% endif %}">
             <div class="notification-icon tone-{{ item.tone }}">
               {% icon item.icon %}
             </div>
@@ -39,10 +45,17 @@
               <p class="notification-message">{{ item.message }}</p>
               <div class="notification-meta">
                 <span>{{ item.time_label }}</span>
+                {% if item.submission_url %}<a href="{{ item.submission_url }}">Open evidence</a>{% endif %}
               </div>
             </div>
 
-            <button type="button" class="notification-dismiss" aria-label="Dismiss notification">x</button>
+            {% if item.unread %}
+              <form method="post">
+                {% csrf_token %}
+                <input type="hidden" name="notification_id" value="{{ item.id }}">
+                <button type="submit" class="notification-dismiss" aria-label="Mark notification as read">x</button>
+              </form>
+            {% endif %}
           </article>
         {% endfor %}
       </div>

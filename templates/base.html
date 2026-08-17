@@ -24,6 +24,11 @@
       {% include 'partials/_topbar.html' %}
 
       <main class="content">
+        {% if messages %}
+          <div class="flash-messages" aria-live="polite">
+            {% for message in messages %}<div class="flash-message flash-{{ message.tags|default:'info' }}">{{ message }}</div>{% endfor %}
+          </div>
+        {% endif %}
         {% block content %}{% endblock %}
       </main>
     </div>

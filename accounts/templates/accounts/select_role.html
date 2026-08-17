@@ -1,0 +1,50 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Select active role · JMCFI AMS</title>
+  <link rel="stylesheet" href="{% static 'css/tokens.css' %}">
+  <link rel="stylesheet" href="{% static 'css/base.css' %}">
+  <link rel="stylesheet" href="{% static 'css/login.css' %}">
+</head>
+<body class="login-body">
+  <main class="login-page">
+    <section class="login-panel" aria-labelledby="role-title">
+      <div class="login-panel-inner">
+        <a class="login-brand" href="{% url 'dashboard:index' %}">
+          <img src="{% static 'images/jmcfi-logo.png' %}" alt="JMCFI logo">
+          <span><strong>JMCFI AMS</strong><small>Accreditation Portal</small></span>
+        </a>
+        <div class="login-card">
+          <div class="login-heading">
+            <span class="login-eyebrow">Workspace context</span>
+            <h1 id="role-title">Select your active role</h1>
+            <p>Choose the role and department you are working under for this session.</p>
+          </div>
+          {% if form.errors %}<div class="login-alert" role="alert">Please select an approved role assignment.</div>{% endif %}
+          <form method="post" class="login-form">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{{ next_url }}">
+            <div class="login-field">
+              <label for="{{ form.assignment.id_for_label }}">Role and department</label>
+              {{ form.assignment }}
+            </div>
+            <button type="submit" class="login-submit"><span>Continue to workspace</span><span class="login-submit-arrow">→</span></button>
+          </form>
+        </div>
+      </div>
+    </section>
+    <aside class="login-visual" aria-label="JMCFI accreditation portal">
+      <div class="login-visual-overlay"></div>
+      <div class="login-visual-top">QUALITY ASSURANCE OFFICE</div>
+      <div class="login-visual-content">
+        <span class="login-visual-kicker">One account, clear responsibilities</span>
+        <h2>Work from the context assigned to you.</h2>
+        <p>Your active role determines which evidence and review queues are available.</p>
+      </div>
+    </aside>
+  </main>
+</body>
+</html>

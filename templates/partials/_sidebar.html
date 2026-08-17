@@ -34,7 +34,7 @@
   </nav>
 
   <div class="sidebar-footer">
-    <div class="avatar-chip">{{ current_user_summary.initials }}</div>
+    <div class="avatar-chip" data-profile-avatar data-profile-initials="{{ current_user_summary.initials }}" data-profile-photo="{{ current_user_summary.photo_url }}">{{ current_user_summary.initials }}</div>
     <div>
       <div class="user-name">{{ current_user_summary.name }}</div>
       <div class="user-role">{{ current_user_summary.role }}</div>

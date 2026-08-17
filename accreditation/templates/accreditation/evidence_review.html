@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block extra_css %}
+  <link rel="stylesheet" href="{% static 'css/evidence_detail.css' %}">
+{% endblock %}
+
+{% block content %}
+  <div class="evidence-detail-page">
+    <div class="evidence-detail-breadcrumb">
+      <a href="{% url 'accreditation:review_workflow' %}">Review Workflow</a>
+      <span>/</span>
+      <strong>{{ requirement.code }}</strong>
+    </div>
+    <header class="evidence-detail-header">
+      <div>
+        <span class="evidence-detail-kicker">Internal review · {{ requirement.area.code }}</span>
+        <h1>{{ requirement.code }} — {{ requirement.title }}</h1>
+        <p>{{ submission.department.name }} · Submitted by {{ submission.program_head.get_full_name|default:submission.program_head.username }}</p>
+      </div>
+      <span class="completion-pill tone-{{ status_tone }}">{{ status_label }}</span>
+    </header>
+
+    {% if form.non_field_errors %}<div class="evidence-alert" role="alert">{{ form.non_field_errors }}</div>{% endif %}
+
+    <div class="evidence-detail-grid">
+      <main>
+        <section class="evidence-card">
+          <div class="evidence-card-head"><div><h2>Program Head submission</h2><p>Review the current self-evaluation, actual situation, and supporting files before deciding.</p></div></div>
+          <div class="evidence-readonly-copy">
+            <div><h3>Self-evaluation</h3><p>{{ submission.self_evaluation|default:'No self-evaluation submitted.' }}</p></div>
+            <div><h3>Actual situation</h3><p>{{ submission.actual_situation|default:'No actual situation submitted.' }}</p></div>
+          </div>
+          <div class="evidence-files">
+            <h3>Supporting documents</h3>
+            {% for file in latest_version.files.all %}
+              <a href="{% if file.file %}{{ file.file.url }}{% else %}{{ file.link_url }}{% endif %}" target="_blank" rel="noreferrer">{{ file.original_name }}</a>
+            {% empty %}<p class="empty-copy">No supporting files or links were submitted.</p>{% endfor %}
+          </div>
+        </section>
+
+        <section class="evidence-card">
+          <div class="evidence-card-head"><div><h2>Review history</h2><p>Previous decisions remain visible to every stage.</p></div></div>
+          <div class="evidence-history">
+            {% for review in reviews %}
+              <article class="history-item"><div class="history-marker"></div><div><strong>{{ review.get_decision_display }}</strong><span>{{ review.reviewer.get_full_name|default:review.reviewer.username }} · {{ review.reviewer_role.name }} · {{ review.created_at|date:'M d, Y H:i' }}</span>{% if review.remarks %}<p>{{ review.remarks }}</p>{% endif %}</div></article>
+            {% empty %}<p class="empty-copy">No prior decisions yet.</p>{% endfor %}
+          </div>
+        </section>
+      </main>
+
+      <aside>
+        <section class="evidence-card review-action-card">
+          <h2>Review decision</h2>
+          <p class="review-assignment">You are the assigned reviewer for this stage.</p>
+          <form method="post" class="evidence-form">
+            {% csrf_token %}
+            <label><span>Decision</span>{{ form.action }}</label>
+            <label><span>Remarks</span>{{ form.remarks }}{% for error in form.remarks.errors %}<em>{{ error }}</em>{% endfor %}</label>
+            <button type="submit" class="evidence-primary-btn">Save review decision</button>
+          </form>
+        </section>
+        <section class="evidence-card evidence-side-card">
+          <h2>Submission details</h2>
+          <dl class="evidence-meta-list">
+            <div><dt>Current reviewer</dt><dd>{{ submission.current_reviewer.get_full_name|default:submission.current_reviewer.username }}</dd></div>
+            <div><dt>Review role</dt><dd>{{ submission.current_review_role.name }}</dd></div>
+            <div><dt>Submitted</dt><dd>{{ submission.submitted_at|date:'M d, Y H:i' }}</dd></div>
+          </dl>
+        </section>
+      </aside>
+    </div>
+  </div>
+{% endblock %}

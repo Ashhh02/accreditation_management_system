@@ -1,0 +1,142 @@
+{% extends 'base.html' %}
+{% load static nav_extras %}
+
+{% block extra_css %}
+  <link rel="stylesheet" href="{% static 'css/evidence_detail.css' %}">
+{% endblock %}
+
+{% block content %}
+  <div class="evidence-detail-page">
+    <div class="evidence-detail-breadcrumb">
+      <a href="{% url 'accreditation:levels_areas' %}">Accreditation</a>
+      <span>/</span>
+      <a href="{% url 'accreditation:area_details' area.slug %}">{{ area.code }}</a>
+      {% if subarea %}<span>/</span><strong>{{ subarea.code }}</strong>{% endif %}
+      <span>/</span>
+      <strong>{{ requirement.code }}</strong>
+    </div>
+
+    <header class="evidence-detail-header">
+      <div>
+        <span class="evidence-detail-kicker">{{ area.level.name }} · {{ area.code }}{% if subarea %} · {{ subarea.code }}{% endif %}</span>
+        <h1>{{ requirement.code }} — {{ requirement.title }}</h1>
+        <p>{{ submission.department.name }} · Program Head: {{ submission.program_head.get_full_name|default:submission.program_head.username }}</p>
+      </div>
+      <span class="completion-pill tone-{{ status_tone }}">{{ status_label }}</span>
+    </header>
+
+    {% if form.non_field_errors %}
+      <div class="evidence-alert" role="alert">{{ form.non_field_errors }}</div>
+    {% endif %}
+
+    <div class="evidence-detail-grid">
+      <main>
+        <section class="evidence-card">
+          <div class="evidence-card-head">
+            <div>
+              <h2>Evidence requirement</h2>
+              <p>{{ requirement.required_description }}</p>
+            </div>
+            <span class="evidence-code">{{ requirement.code }}</span>
+          </div>
+
+          {% if can_edit %}
+            <form method="post" enctype="multipart/form-data" class="evidence-form">
+              {% csrf_token %}
+              <label>
+                <span>Self-evaluation</span>
+                {{ form.self_evaluation }}
+                {% for error in form.self_evaluation.errors %}<em>{{ error }}</em>{% endfor %}
+              </label>
+              <label>
+                <span>Actual situation</span>
+                {{ form.actual_situation }}
+                {% for error in form.actual_situation.errors %}<em>{{ error }}</em>{% endfor %}
+              </label>
+              <label>
+                <span>Supporting document files</span>
+                {{ form.files }}
+                {% for error in form.files.errors %}<em>{{ error }}</em>{% endfor %}
+              </label>
+              <label>
+                <span>Supporting link <small>(optional)</small></span>
+                {{ form.link_url }}
+                {% for error in form.link_url.errors %}<em>{{ error }}</em>{% endfor %}
+              </label>
+              <div class="evidence-form-actions">
+                <a href="{% url 'accreditation:submission_workspace_subarea' area.slug subarea.code|slugify %}" class="evidence-secondary-btn">Cancel</a>
+                <button type="submit" name="action" value="save_draft" class="evidence-secondary-btn">Save Draft</button>
+                <button type="submit" name="action" value="submit" class="evidence-primary-btn">{% if submission.status == 'NEEDS_REVISION' %}Resubmit{% else %}Submit for review{% endif %}</button>
+              </div>
+            </form>
+          {% else %}
+            <div class="evidence-readonly-copy">
+              <div>
+                <h3>Self-evaluation</h3>
+                <p>{{ submission.self_evaluation|default:'No self-evaluation submitted yet.' }}</p>
+              </div>
+              <div>
+                <h3>Actual situation</h3>
+                <p>{{ submission.actual_situation|default:'No actual situation recorded yet.' }}</p>
+              </div>
+            </div>
+          {% endif %}
+        </section>
+
+        <section class="evidence-card">
+          <div class="evidence-card-head"><div><h2>Review history</h2><p>Every decision and remark remains attached to this submission.</p></div></div>
+          <div class="evidence-history">
+            {% for review in reviews %}
+              <article class="history-item">
+                <div class="history-marker"></div>
+                <div>
+                  <strong>{{ review.get_decision_display }}</strong>
+                  <span>{{ review.reviewer.get_full_name|default:review.reviewer.username }} · {{ review.reviewer_role.name }} · {{ review.created_at|date:'M d, Y H:i' }}</span>
+                  {% if review.remarks %}<p>{{ review.remarks }}</p>{% endif %}
+                </div>
+              </article>
+            {% empty %}
+              <p class="empty-copy">No review decisions yet.</p>
+            {% endfor %}
+          </div>
+        </section>
+      </main>
+
+      <aside>
+        <section class="evidence-card evidence-side-card">
+          <h2>Submission details</h2>
+          <dl class="evidence-meta-list">
+            <div><dt>Status</dt><dd>{{ status_label }}</dd></div>
+            <div><dt>Current reviewer</dt><dd>{% if submission.current_reviewer %}{{ submission.current_reviewer.get_full_name|default:submission.current_reviewer.username }}{% else %}Not assigned{% endif %}</dd></div>
+            <div><dt>Submitted</dt><dd>{{ submission.submitted_at|date:'M d, Y H:i'|default:'Not submitted' }}</dd></div>
+            <div><dt>Last updated</dt><dd>{{ submission.last_updated|date:'M d, Y H:i' }}</dd></div>
+          </dl>
+        </section>
+
+        <section class="evidence-card evidence-side-card">
+          <h2>Version history</h2>
+          <div class="version-list">
+            {% for version in versions %}
+              <article>
+                <strong>Version {{ version.version_number }}</strong>
+                <span>{{ version.submitted_by.get_full_name|default:version.submitted_by.username }} · {{ version.created_at|date:'M d, Y H:i' }}</span>
+                {% for file in version.files.all %}<a href="{% if file.file %}{{ file.file.url }}{% else %}{{ file.link_url }}{% endif %}" target="_blank" rel="noreferrer">{{ file.original_name }}</a>{% endfor %}
+              </article>
+            {% empty %}
+              <p class="empty-copy">No submitted versions yet.</p>
+            {% endfor %}
+          </div>
+        </section>
+
+        <section class="evidence-card evidence-side-card">
+          <h2>Comments</h2>
+          {% for comment in comments %}
+            <article class="comment-item"><strong>{{ comment.author.get_full_name|default:comment.author.username }}</strong><span>{{ comment.created_at|date:'M d, Y H:i' }}</span><p>{{ comment.body }}</p></article>
+          {% empty %}
+            <p class="empty-copy">No comments yet.</p>
+          {% endfor %}
+        </section>
+      </aside>
+    </div>
+  </div>
+{% endblock %}

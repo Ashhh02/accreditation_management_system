@@ -94,7 +94,13 @@
               <li>
                 <span class="requirement-number">{{ forloop.counter }}</span>
                 <div>
-                  <h3>{% if item.code %}{{ item.code }} — {% endif %}{{ item.title }}</h3>
+                  <h3>
+                    {% if item.submission_id %}
+                      <a class="requirement-link" href="{% url 'accreditation:evidence_detail' item.submission_id %}">{% if item.code %}{{ item.code }} — {% endif %}{{ item.title }}</a>
+                    {% else %}
+                      {% if item.code %}{{ item.code }} — {% endif %}{{ item.title }}
+                    {% endif %}
+                  </h3>
                   <p>{{ item.description }}</p>
                 </div>
                 <em class="status-pill tone-{{ item.tone }}">{{ item.status }}</em>
@@ -129,11 +135,12 @@
           </div>
 
           {% if workspace.subarea_key %}
-            <div class="workspace-actions workspace-document-actions" aria-label="Submission actions">
-              <button type="button" class="workspace-action-btn workspace-action-cancel" data-workspace-action="cancel">Cancel</button>
-              <button type="button" class="workspace-action-btn workspace-action-resubmit" data-workspace-action="resubmit" hidden>Resubmit</button>
-              <button type="button" class="workspace-action-btn workspace-action-submit" data-workspace-action="submit">Submit</button>
-            </div>
+            <form method="post" class="workspace-actions workspace-document-actions" aria-label="Submission actions">
+              {% csrf_token %}
+              <a href="{% url 'accreditation:area_details' workspace.area_key %}" class="workspace-action-btn workspace-action-cancel">Cancel</a>
+              {% if can_resubmit %}<button type="submit" name="action" value="resubmit" class="workspace-action-btn workspace-action-resubmit">Resubmit</button>{% endif %}
+              {% if can_submit %}<button type="submit" name="action" value="submit" class="workspace-action-btn workspace-action-submit">Submit</button>{% endif %}
+            </form>
           {% endif %}
         </section>
       </main>

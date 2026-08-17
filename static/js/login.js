@@ -1,0 +1,25 @@
+document.addEventListener('DOMContentLoaded', function () {
+  const passwordToggle = document.querySelector('[data-password-toggle]');
+  const passwordInput = passwordToggle
+    ? passwordToggle.closest('.login-password-wrap')?.querySelector('input')
+    : null;
+
+  if (passwordInput && passwordToggle) {
+    passwordToggle.addEventListener('click', function () {
+      const isVisible = passwordInput.type === 'text';
+      passwordInput.type = isVisible ? 'password' : 'text';
+      passwordToggle.textContent = isVisible ? 'Show' : 'Hide';
+      passwordToggle.setAttribute('aria-label', isVisible ? 'Show password' : 'Hide password');
+    });
+  }
+
+  const loginForm = document.querySelector('.login-form');
+  const submitButton = loginForm?.querySelector('.login-submit');
+
+  if (loginForm && submitButton) {
+    loginForm.addEventListener('submit', function () {
+      submitButton.disabled = true;
+      submitButton.querySelector('.login-submit-label').textContent = 'Signing in...';
+    });
+  }
+});

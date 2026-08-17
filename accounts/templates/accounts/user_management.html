@@ -9,7 +9,7 @@
   <div class="users-page">
     <header class="users-header">
       <h1>User Management</h1>
-      <p>Manage institutional accounts and access control</p>
+      <p>Manage institutional accounts, approvals, and internal role assignments</p>
     </header>
 
     <section class="users-stat-grid" aria-label="User summary">
@@ -58,99 +58,75 @@
                     <div>
                       <strong>{{ user.name }}</strong>
                       <span>{{ user.email }}</span>
+                      {% if user.is_demo %}<small>Development demo account</small>{% endif %}
                     </div>
                   </div>
                 </td>
-                <td>
-                  <span class="user-chip tone-{{ user.role_tone }}">{{ user.role }}</span>
-                </td>
+                <td><span class="user-chip tone-{{ user.role_tone }}">{{ user.role }}</span></td>
                 <td>{{ user.department }}</td>
                 <td class="user-auth">{{ user.auth }}</td>
+                <td><span class="user-presence tone-{{ user.status_tone }}">{{ user.status }}</span></td>
+                <td><span class="user-chip tone-{{ user.approval_tone }}">{{ user.approval }}</span></td>
                 <td>
-                  <span class="user-presence tone-{{ user.status_tone }}">{{ user.status }}</span>
-                </td>
-                <td>
-                  <span class="user-chip tone-{{ user.approval_tone }}">{{ user.approval }}</span>
-                </td>
-                <td>
-                  <button
-                    type="button"
-                    class="manage-btn"
-                    data-user-name="{{ user.name }}"
-                    data-user-email="{{ user.email }}"
-                    data-user-role="{{ user.role }}"
-                    data-user-department="{{ user.department }}"
-                    data-user-status="{{ user.status }}"
-                    data-user-approval="{{ user.approval }}"
-                  >Manage</button>
+                  <div class="user-action-stack">
+                    {% if user.is_pending %}
+                      <form method="post">
+                        {% csrf_token %}
+                        <input type="hidden" name="user_id" value="{{ user.id }}">
+                        <button type="submit" name="action" value="approve" class="manage-btn">Approve</button>
+                      </form>
+                      <form method="post">
+                        {% csrf_token %}
+                        <input type="hidden" name="user_id" value="{{ user.id }}">
+                        <button type="submit" name="action" value="reject" class="manage-btn manage-btn-muted">Reject</button>
+                      </form>
+                    {% elif user.status == 'Active' %}
+                      <form method="post">
+                        {% csrf_token %}
+                        <input type="hidden" name="user_id" value="{{ user.id }}">
+                        <button type="submit" name="action" value="deactivate" class="manage-btn manage-btn-muted">Deactivate</button>
+                      </form>
+                    {% else %}
+                      <form method="post">
+                        {% csrf_token %}
+                        <input type="hidden" name="user_id" value="{{ user.id }}">
+                        <button type="submit" name="action" value="activate" class="manage-btn">Activate</button>
+                      </form>
+                    {% endif %}
+                  </div>
                 </td>
               </tr>
+            {% empty %}
+              <tr><td colspan="7" class="empty-copy">No user accounts have been registered.</td></tr>
             {% endfor %}
           </tbody>
         </table>
       </div>
 
       <footer class="users-table-footer">
-        <span>Showing 7 of 7 users</span>
-        <span class="page-pill">1</span>
+        <span>Showing {{ users|length }} users</span>
       </footer>
     </section>
 
-    <dialog class="user-manage-dialog" aria-labelledby="user-manage-title">
-      <form class="user-manage-form" method="dialog">
-        <header class="user-manage-dialog-header">
-          <div>
-            <span class="dialog-kicker">User Account</span>
-            <h2 id="user-manage-title">Manage User</h2>
-          </div>
-          <button type="button" class="dialog-close" aria-label="Close user management panel">&times;</button>
-        </header>
-
-        <div class="managed-user-summary">
-          <span class="managed-user-avatar"></span>
-          <div>
-            <strong data-managed-name></strong>
-            <span data-managed-email></span>
-          </div>
+    {% if can_manage_assignments %}
+      <section class="users-table-card assignment-card">
+        <div class="users-header assignment-header">
+          <h2>Assign an internal role</h2>
+          <p>Role assignments are scoped to the selected department or program.</p>
         </div>
-
-        <div class="manage-field-grid">
-          <label>
-            <span>Role</span>
-            <select name="role">
-              <option>Program Head</option>
-              <option>Dean</option>
-              <option>Area Chair</option>
-              <option>External Accreditor</option>
-              <option>QA</option>
-            </select>
-          </label>
-          <label>
-            <span>Department</span>
-            <input name="department" type="text">
-          </label>
-          <label>
-            <span>Account Status</span>
-            <select name="status">
-              <option>Active</option>
-              <option>Pending</option>
-              <option>Inactive</option>
-            </select>
-          </label>
-          <label>
-            <span>Approval</span>
-            <select name="approval">
-              <option>Approved</option>
-              <option>Pending</option>
-            </select>
-          </label>
-        </div>
-
-        <footer class="user-manage-actions">
-          <button type="button" class="dialog-cancel">Cancel</button>
-          <button type="submit" class="dialog-save">Save Changes</button>
-        </footer>
-      </form>
-    </dialog>
+        <form method="post" class="assignment-form">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="assign">
+          {% for field in assignment_form %}
+            <label>
+              <span>{{ field.label }}</span>
+              {{ field }}
+              {% for error in field.errors %}<em>{{ error }}</em>{% endfor %}
+            </label>
+          {% endfor %}
+          <button type="submit" class="dialog-save">Save assignment</button>
+        </form>
+      </section>
+    {% endif %}
   </div>
 {% endblock %}

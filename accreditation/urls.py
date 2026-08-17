@@ -1,6 +1,6 @@
 from django.urls import path
 
-from . import views
+from . import db_views as views
 
 app_name = 'accreditation'
 
@@ -10,5 +10,7 @@ urlpatterns = [
     path('submission-workspace/', views.SubmissionWorkspaceView.as_view(), name='submission_workspace'),
     path('submission-workspace/<slug:area_key>/<slug:subarea_key>/', views.SubmissionWorkspaceView.as_view(), name='submission_workspace_subarea'),
     path('submission-workspace/<slug:area_key>/', views.SubmissionWorkspaceView.as_view(), name='submission_workspace_area'),
+    path('evidence/<int:submission_id>/', views.EvidenceDetailView.as_view(), name='evidence_detail'),
+    path('review/<int:submission_id>/', views.EvidenceReviewView.as_view(), name='evidence_review'),
     path('review-workflow/', views.ReviewWorkflowView.as_view(), name='review_workflow'),
 ]

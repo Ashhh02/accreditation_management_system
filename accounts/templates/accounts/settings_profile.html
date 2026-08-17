@@ -29,34 +29,45 @@
       </aside>
 
       <div class="settings-panels">
-        <form class="profile-card settings-panel is-active" id="settings-panel-profile" data-settings-panel="profile">
+        <form class="profile-card settings-panel is-active" id="settings-panel-profile" data-settings-panel="profile" method="post" enctype="multipart/form-data">
+          {% csrf_token %}
           <h2>Personal Information</h2>
+          {% if form.non_field_errors %}<div class="settings-field-error">{{ form.non_field_errors }}</div>{% endif %}
 
           <div class="profile-hero">
-            <div class="profile-avatar" data-profile-avatar data-profile-initials="{{ profile.initials }}">{{ profile.initials }}</div>
+            <div class="profile-avatar" data-profile-avatar data-profile-initials="{{ profile.initials }}" data-profile-photo="{{ profile.photo_url }}">{{ profile.initials }}</div>
             <div>
               <h3>{{ profile.name }}</h3>
               <p>{{ profile.office }}</p>
               <button type="button" class="change-photo-btn" aria-controls="profile-photo-input">Change Photo</button>
-              <input id="profile-photo-input" type="file" accept="image/*" hidden>
+              <input id="profile-photo-input" name="photo" type="file" accept="image/*" hidden>
+              {% for error in form.photo.errors %}<em class="settings-field-error">{{ error }}</em>{% endfor %}
             </div>
           </div>
 
           <div class="field-grid">
             <label>
-              <span>Full Name</span>
-              <input type="text" value="{{ profile.name }}">
+              <span>First Name</span>
+              {{ form.first_name }}
+              {% for error in form.first_name.errors %}<em class="settings-field-error">{{ error }}</em>{% endfor %}
             </label>
 
             <label>
-              <span>Email Address</span>
-              <input type="email" value="{{ profile.email }}">
+              <span>Last Name</span>
+              {{ form.last_name }}
+              {% for error in form.last_name.errors %}<em class="settings-field-error">{{ error }}</em>{% endfor %}
             </label>
           </div>
 
           <label class="full-field">
             <span>Department / College</span>
-            <input type="text" value="{{ profile.office }}">
+            <input type="text" value="{{ profile.office }}" disabled>
+          </label>
+
+          <label class="full-field">
+            <span>Email Address</span>
+            {{ form.email }}
+            {% for error in form.email.errors %}<em class="settings-field-error">{{ error }}</em>{% endfor %}
           </label>
 
           <section class="role-assignment">
@@ -67,7 +78,7 @@
             </div>
           </section>
 
-          <button type="button" class="save-settings-btn">
+          <button type="submit" class="save-settings-btn">
             {% icon 'file' %}
             <span>Save Changes</span>
           </button>
@@ -99,10 +110,10 @@
             <p>Use at least 8 characters with a mix of letters, numbers, and symbols.</p>
           </section>
 
-          <button type="button" class="save-settings-btn">
+          <a href="{% url 'accounts:change_password' %}" class="save-settings-btn">
             {% icon 'file' %}
             <span>Update Password</span>
-          </button>
+          </a>
         </form>
 
         <form class="profile-card settings-panel" id="settings-panel-notifications" data-settings-panel="notifications" hidden>

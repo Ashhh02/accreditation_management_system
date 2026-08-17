@@ -1,160 +1,176 @@
+from datetime import timedelta
+
+from django.db.models import Count
+from django.utils import timezone
+from django.utils.timesince import timesince
 from django.views.generic import TemplateView
+
+from accreditation.models import AccreditationCycle, AccreditationLevel, EvidenceRequirement, EvidenceSubmission
+from core.access import accessible_submissions, active_assignment
+from core.models import AuditLog
+from core.mixins import ApprovedUserRequiredMixin
 
 from .charting import build_line_chart
 
 
-class DashboardView(TemplateView):
-    """
-    Main QA Office dashboard: KPI summary, AI readiness alert,
-    submission trend, and per-area readiness.
+COMPLETED_STATUSES = {EvidenceSubmission.COMPLIED, EvidenceSubmission.CLOSED}
+ACTIVE_REVIEW_STATUSES = {
+    EvidenceSubmission.UNDER_DEAN_REVIEW,
+    EvidenceSubmission.UNDER_AREA_CHAIR_REVIEW,
+    EvidenceSubmission.UNDER_QA_REVIEW,
+}
 
-    All data below is placeholder UI data. Once submissions/areas
-    have real models, replace each block with a queryset/service call
-    and keep the template untouched.
-    """
+
+class DashboardView(ApprovedUserRequiredMixin, TemplateView):
     template_name = 'dashboard/index.html'
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        user = self.request.user
+        cycle = AccreditationCycle.objects.filter(is_active=True).first()
+        assignment = active_assignment(user)
+        submissions = accessible_submissions(user).select_related('requirement', 'requirement__area', 'department', 'program_head')
+        total = submissions.count()
+        complied = submissions.filter(status__in=COMPLETED_STATUSES).count()
+        pending = submissions.filter(status__in=ACTIVE_REVIEW_STATUSES).count()
+        revisions = submissions.filter(status=EvidenceSubmission.NEEDS_REVISION).count()
+        readiness = round(complied * 100 / total) if total else 0
+
+        levels = AccreditationLevel.objects.filter(cycle=cycle).prefetch_related('areas') if cycle else AccreditationLevel.objects.none()
+        active_level = levels.filter(code='I').first() or levels.first()
+        area_readiness = []
+        highest_gap = None
+        if active_level:
+            for area in active_level.areas.all():
+                requirement_count = EvidenceRequirement.objects.filter(area=area).count()
+                completed_count = submissions.filter(
+                    requirement__area=area,
+                    status__in=COMPLETED_STATUSES,
+                ).count()
+                value = round(completed_count * 100 / requirement_count) if requirement_count else 0
+                area_readiness.append({
+                    'code': area.code,
+                    'value': value,
+                    'tone': 'green' if value >= 80 else 'gold' if value >= 50 else 'maroon',
+                })
+                gap = (100 - value, area)
+                if highest_gap is None or gap[0] > highest_gap[0]:
+                    highest_gap = gap
+
+        if highest_gap:
+            alert_area = highest_gap[1]
+            missing_departments = submissions.filter(
+                requirement__area=alert_area,
+                status=EvidenceSubmission.DRAFT,
+            ).values('department_id').distinct().count()
+            alert = {
+                'area_code': alert_area.code,
+                'area_name': alert_area.name,
+                'readiness_gap': highest_gap[0],
+                'days_left': None,
+                'departments_missing': missing_departments,
+                'message': f'has a {highest_gap[0]}% readiness gap. {missing_departments} departments still have draft or missing evidence.' if missing_departments else f'has a {highest_gap[0]}% readiness gap. Review the outstanding requirements before the next internal checkpoint.',
+            }
+        else:
+            alert = {
+                'area_code': 'No active area',
+                'area_name': 'Evidence readiness',
+                'readiness_gap': 0,
+                'days_left': None,
+                'departments_missing': 0,
+                'message': 'Activate an accreditation cycle and configure evidence requirements to begin monitoring readiness.',
+            }
 
         context['cycle'] = {
-            'office': 'Quality Assurance Office',
-            'academic_year': '2025–2026',
-            'program': 'PACUCOA Accreditation Cycle',
+            'office': assignment.department.name if assignment else 'Quality Assurance Office',
+            'academic_year': cycle.academic_year if cycle else 'No active cycle',
+            'program': cycle.name if cycle else 'Accreditation Cycle',
         }
-
-        context['alert'] = {
-            'area_code': 'Area VIII',
-            'area_name': 'SOCE',
-            'readiness_gap': 45,
-            'days_left': 20,
-            'departments_missing': 3,
-            'message': (
-                'has a 45% readiness gap with 20 days until the preliminary '
-                'deadline. 3 departments are missing critical supporting '
-                'documents. Immediate action recommended.'
-            ),
-        }
-
+        context['alert'] = alert
         context['stats'] = [
             {
                 'label': 'Total Submissions',
-                'value': 247,
-                'note': '+18 this week',
+                'value': total,
+                'note': f'{submissions.filter(created_at__gte=timezone.now() - timedelta(days=7)).count()} this week',
                 'icon': 'file',
                 'tone': 'rose',
             },
             {
                 'label': 'Complied',
-                'value': 182,
-                'note': '73.7% compliance rate',
+                'value': complied,
+                'note': f'{readiness}% compliance rate',
                 'icon': 'check',
                 'tone': 'green',
             },
             {
                 'label': 'Pending Review',
-                'value': 41,
-                'note': '12 overdue',
+                'value': pending,
+                'note': 'Awaiting assigned reviewer',
                 'icon': 'clock',
                 'tone': 'gold',
             },
             {
                 'label': 'Needs Revision',
-                'value': 24,
-                'note': '8 critical',
+                'value': revisions,
+                'note': 'Returned to Program Heads',
                 'icon': 'alert',
                 'tone': 'red',
             },
         ]
 
-        months = ['Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul']
+        months = []
+        submitted_values = []
+        complied_values = []
+        revision_values = []
+        now = timezone.now()
+        for offset in range(5, -1, -1):
+            month_start = (now.replace(day=1) - timedelta(days=offset * 31)).replace(day=1)
+            next_month = (month_start.replace(day=28) + timedelta(days=4)).replace(day=1)
+            months.append(month_start.strftime('%b'))
+            month_submissions = submissions.filter(created_at__gte=month_start, created_at__lt=next_month)
+            submitted_values.append(month_submissions.count())
+            complied_values.append(month_submissions.filter(status__in=COMPLETED_STATUSES).count())
+            revision_values.append(month_submissions.filter(status=EvidenceSubmission.NEEDS_REVISION).count())
+        chart_max = max([1, *submitted_values, *complied_values, *revision_values])
         raw_series = [
-            {'name': 'Submitted', 'color': 'maroon', 'values': [12, 21, 29, 37, 44, 52]},
-            {'name': 'Complied', 'color': 'green', 'values': [8, 16, 24, 32, 39, 47]},
-            {'name': 'Revision', 'color': 'gold', 'values': [2, 3, 3, 4, 4, 5]},
+            {'name': 'Submitted', 'color': 'maroon', 'values': submitted_values},
+            {'name': 'Complied', 'color': 'green', 'values': complied_values},
+            {'name': 'Revision', 'color': 'gold', 'values': revision_values},
         ]
         context['trend'] = {
-            'range_label': 'Feb – Jul 2026',
-            'y_ticks': [0, 15, 30, 45, 60],
-            'chart': build_line_chart(months, raw_series, max_value=60),
+            'range_label': f'{months[0]} – {months[-1]} {now.year}',
+            'y_ticks': [0, max(1, chart_max // 4), max(1, chart_max // 2), max(1, (chart_max * 3) // 4), chart_max],
+            'chart': build_line_chart(months, raw_series, max_value=chart_max),
         }
-
         context['area_readiness'] = {
-            'sublabel': 'Level I · All departments avg.',
-            'areas': [
-                {'code': 'Area I', 'value': 92, 'tone': 'gold'},
-                {'code': 'Area III', 'value': 88, 'tone': 'green'},
-                {'code': 'Area V', 'value': 79, 'tone': 'gold'},
-                {'code': 'Area VII', 'value': 31, 'tone': 'maroon'},
-                {'code': 'Area IX', 'value': 84, 'tone': 'green'},
-                {'code': 'Area XI', 'value': 68, 'tone': 'gold'},
-            ],
+            'sublabel': f'{active_level.name if active_level else "No active level"} · Current access scope',
+            'areas': area_readiness,
         }
 
-        context['recent_activity'] = [
-            {
-                'tone': 'green',
-                'actor': 'Prof. J. Reyes',
-                'action': 'submitted evidence for',
-                'target': 'Area III – Instruction',
-                'time_ago': '14 min ago',
-            },
-            {
-                'tone': 'maroon',
-                'actor': 'Dr. E. Cruz',
-                'action': 'requested revision on',
-                'target': 'Area II – Faculty (Dept. C)',
-                'time_ago': '1h ago',
-            },
-            {
-                'tone': 'maroon',
-                'actor': 'AI Companion',
-                'action': 'flagged missing docs in',
-                'target': 'Area VII – Student Services',
-                'time_ago': '2h ago',
-            },
-            {
-                'tone': 'green',
-                'actor': 'Dr. M. Santos',
-                'action': 'approved',
-                'target': 'Area I – Philosophy (Level 1)',
-                'time_ago': '3h ago',
-            },
-            {
-                'tone': 'blue',
-                'actor': 'Prof. A. Dela Cruz',
-                'action': 'uploaded document to',
-                'target': 'Area V – Research Repository',
-                'time_ago': '5h ago',
-            },
-        ]
+        recent_activity = []
+        audit_events = AuditLog.objects.filter(submission__in=submissions).select_related(
+            'actor', 'submission__requirement', 'submission__requirement__area'
+        )[:5]
+        for event in audit_events:
+            actor = event.actor.get_full_name() if event.actor else 'System'
+            action_labels = {
+                'SUBMITTED': 'submitted evidence for',
+                'DRAFT_SAVED': 'saved a draft for',
+                'APPROVED': 'approved',
+                'REQUEST_REVISION': 'requested revision on',
+                'COMPLIED': 'marked complied',
+                'CLOSED': 'closed',
+                'NON_COMPLIED': 'marked non-complied',
+            }
+            recent_activity.append({
+                'tone': 'green' if event.action in {'APPROVED', 'COMPLIED', 'CLOSED'} else 'maroon' if event.action in {'REQUEST_REVISION', 'NON_COMPLIED'} else 'blue',
+                'actor': actor or event.actor.username,
+                'action': action_labels.get(event.action, event.action.replace('_', ' ').lower()),
+                'target': event.submission.requirement.code if event.submission else event.object_type,
+                'time_ago': f'{timesince(event.created_at)} ago',
+            })
 
-        context['upcoming_deadlines'] = [
-            {
-                'days': 11,
-                'title': 'Level I Preliminary Submission',
-                'date_label': 'Aug 14, 2026',
-                'urgent': True,
-            },
-            {
-                'days': 20,
-                'title': 'Faculty Credentials – Area II',
-                'date_label': 'Aug 23, 2026',
-                'urgent': False,
-            },
-            {
-                'days': 32,
-                'title': 'External Review Window Opens',
-                'date_label': 'Sep 4, 2026',
-                'urgent': False,
-            },
-        ]
-
-        context['quick_actions'] = [
-            'Submit Evidence',
-            'Review Queue',
-            'Upload Document',
-            'View Reports',
-        ]
-
+        context['recent_activity'] = recent_activity
+        context['upcoming_deadlines'] = []
+        context['quick_actions'] = ['Submit Evidence', 'Review Queue', 'Upload Document', 'View Reports']
         return context

@@ -1,0 +1,106 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sign in · JMCFI AMS</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="{% static 'css/tokens.css' %}">
+  <link rel="stylesheet" href="{% static 'css/base.css' %}">
+  <link rel="stylesheet" href="{% static 'css/login.css' %}">
+</head>
+<body class="login-body">
+  <main class="login-page">
+    <section class="login-panel" aria-labelledby="login-title">
+      <div class="login-panel-inner">
+        <a class="login-brand" href="{% url 'login' %}" aria-label="JMCFI AMS sign in">
+          <img src="{% static 'images/jmcfi-logo.png' %}" alt="JMCFI logo">
+          <span>
+            <strong>JMCFI AMS</strong>
+            <small>Accreditation Portal</small>
+          </span>
+        </a>
+
+        <div class="login-card">
+          <div class="login-heading">
+            <span class="login-eyebrow">Welcome back</span>
+            <h1 id="login-title">Sign in to your account</h1>
+            <p>Access your accreditation workspace and keep every submission moving.</p>
+          </div>
+
+          {% if form.non_field_errors %}
+            <div class="login-alert" role="alert">
+              {% for error in form.non_field_errors %}{{ error }}{% endfor %}
+            </div>
+          {% endif %}
+
+          <form method="post" action="{% url 'login' %}" class="login-form">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{{ next }}">
+
+            <div class="login-field">
+              <label for="{{ form.username.id_for_label }}">Email or username</label>
+              {{ form.username }}
+              {% for error in form.username.errors %}
+                <span class="login-field-error">{{ error }}</span>
+              {% endfor %}
+            </div>
+
+            <div class="login-field">
+              <div class="login-field-label-row">
+                <label for="{{ form.password.id_for_label }}">Password</label>
+                <span class="login-help">Keep your credentials private</span>
+              </div>
+              <div class="login-password-wrap">
+                {{ form.password }}
+                <button type="button" class="password-toggle" data-password-toggle aria-label="Show password">Show</button>
+              </div>
+              {% for error in form.password.errors %}
+                <span class="login-field-error">{{ error }}</span>
+              {% endfor %}
+            </div>
+
+            <div class="login-options">
+              <label class="remember-option">
+                <input type="checkbox" name="remember_me">
+                <span>Keep me signed in</span>
+              </label>
+              <span class="login-secure-note">Secure access</span>
+            </div>
+
+            <button type="submit" class="login-submit">
+              <span class="login-submit-label">Sign in</span>
+              <span class="login-submit-arrow" aria-hidden="true">→</span>
+            </button>
+          </form>
+
+          <p class="login-support">Need access? <a href="{% url 'register' %}">Request an account</a>.</p>
+        </div>
+
+        <p class="login-footer">JMCFI Accreditation Management System <span>·</span> 2025–2026</p>
+      </div>
+    </section>
+
+    <aside class="login-visual" aria-label="JMCFI accreditation portal">
+      <div class="login-visual-overlay"></div>
+      <div class="login-visual-top">QUALITY ASSURANCE OFFICE</div>
+      <div class="login-visual-content">
+        <span class="login-visual-kicker">Accreditation, connected</span>
+        <h2>One place for every accreditation milestone.</h2>
+        <p>Coordinate evidence, monitor readiness, and keep your teams aligned from preparation to review.</p>
+        <div class="login-visual-meta">
+          <span><i></i> PACUCOA Accreditation Cycle</span>
+          <span><i></i> Academic Year 2025–2026</span>
+        </div>
+      </div>
+    </aside>
+  </main>
+
+  <script src="{% static 'js/login.js' %}" defer></script>
+</body>
+</html>

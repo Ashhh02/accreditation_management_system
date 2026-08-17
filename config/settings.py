@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
 from pathlib import Path
+import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -20,12 +21,18 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-%20ig3=nm%)7nf8(i(&gs6!=!01$_64e@2q8zi7-$&c046-@$j'
+SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'django-insecure-%20ig3=nm%)7nf8(i(&gs6!=!01$_64e@2q8zi7-$&c046-@$j')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.getenv('DEBUG', 'True').lower() in {'1', 'true', 'yes', 'on'}
 
-ALLOWED_HOSTS = []
+# Demo accounts and the default development password are accepted only when
+# the project is running in demo mode. Production deployments should set
+# DEMO_MODE=False; when it is omitted, it follows DEBUG.
+demo_mode_setting = os.getenv('DEMO_MODE')
+DEMO_MODE = (DEBUG if demo_mode_setting is None else demo_mode_setting.lower() in {'1', 'true', 'yes', 'on'})
+
+ALLOWED_HOSTS = [host.strip() for host in os.getenv('DJANGO_ALLOWED_HOSTS', '127.0.0.1,localhost,testserver').split(',') if host.strip()]
 
 
 # Application definition
@@ -126,3 +133,6 @@ USE_TZ = True
 STATIC_URL = 'static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
 STATIC_ROOT = BASE_DIR / 'staticfiles'
+
+MEDIA_URL = 'media/'
+MEDIA_ROOT = BASE_DIR / 'media'

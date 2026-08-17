@@ -1,104 +1,63 @@
 from django.views.generic import TemplateView
 
+from accreditation.db_views import status_label, status_tone
+from accreditation.models import EvidenceFile, EvidenceSubmission
+from core.access import accessible_submissions
+from core.mixins import ApprovedUserRequiredMixin
 
-class DocumentRepositoryView(TemplateView):
+
+class DocumentRepositoryView(ApprovedUserRequiredMixin, TemplateView):
     template_name = 'resources/document_repository.html'
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        departments = [
-            {'label': 'All Documents', 'active': True},
-            {'label': 'College of Engineering', 'active': False},
-            {'label': 'College of Nursing', 'active': False},
-            {'label': 'College of Business', 'active': False},
-            {'label': 'Library', 'active': False},
-            {'label': 'Student Affairs', 'active': False},
-            {'label': 'Facilities Office', 'active': False},
-        ]
-        documents = [
-            {
-                'name': 'Faculty_Credentials_2025-2026.pdf',
-                'department': 'College of Engineering',
-                'details': 'Area II · Level I · Prof. J. Reyes · 3.2 MB',
-                'tags': ['Faculty', 'Credentials'],
-                'version': 'v4',
-                'updated': 'Updated Jul 14, 2026',
-                'status': 'Approved',
-                'tone': 'green',
+        submissions = accessible_submissions(self.request.user)
+        evidence_files = EvidenceFile.objects.filter(
+            version__submission__in=submissions,
+        ).select_related(
+            'version__submission__requirement__area__level',
+            'version__submission__requirement__subarea',
+            'version__submission__department',
+            'version__submission__program_head',
+        )
+        departments = [{'label': 'All Documents', 'active': True}]
+        department_names = list(evidence_files.values_list('version__submission__department__name', flat=True).distinct())
+        departments.extend({'label': name, 'active': False} for name in department_names)
+        documents = []
+        for evidence_file in evidence_files:
+            submission = evidence_file.version.submission
+            requirement = submission.requirement
+            name = evidence_file.original_name or evidence_file.file.name or evidence_file.link_url
+            documents.append({
+                'name': name,
+                'department': submission.department.name,
+                'details': f'{requirement.area.code} · {requirement.area.level.name} · {submission.program_head.get_full_name() or submission.program_head.username}',
+                'tags': [requirement.area.name, requirement.subarea.code if requirement.subarea else 'Evidence'],
+                'version': f'v{evidence_file.version.version_number}',
+                'updated': f'Updated {evidence_file.created_at:%b %d, %Y}',
+                'status': status_label(submission.status),
+                'tone': status_tone(submission.status),
                 'icon_tone': 'rose',
-            },
-            {
-                'name': 'Research_Output_Compilation_Q1.xlsx',
-                'department': 'College of Nursing',
-                'details': 'Area V · Level I · Dr. C. Bautista · 1.8 MB',
-                'tags': ['Research', 'Output'],
-                'version': 'v2',
-                'updated': 'Updated Jul 13, 2026',
-                'status': 'Pending',
-                'tone': 'gold',
-                'icon_tone': 'green',
-            },
-            {
-                'name': 'Student_Handbook_AY2025.pdf',
-                'department': 'Student Affairs',
-                'details': 'Area VII · Level I · Ms. F. Santos · 5.4 MB',
-                'tags': ['Students', 'Policy'],
-                'version': 'v1',
-                'updated': 'Updated Jul 12, 2026',
-                'status': 'Approved',
-                'tone': 'green',
-                'icon_tone': 'rose',
-            },
-            {
-                'name': 'Library_Collection_Inventory.docx',
-                'department': 'Library',
-                'details': 'Area VI · Level I · Ms. A. Cruz · 2.1 MB',
-                'tags': ['Library', 'Inventory'],
-                'version': 'v3',
-                'updated': 'Updated Jul 11, 2026',
-                'status': 'Needs Revision',
-                'tone': 'rose',
-                'icon_tone': 'blue',
-            },
-            {
-                'name': 'Physical_Plant_Assessment_2026.pdf',
-                'department': 'Facilities Office',
-                'details': 'Area IX · Level I · Engr. B. Ramos · 8.7 MB',
-                'tags': ['Facilities', 'Assessment'],
-                'version': 'v2',
-                'updated': 'Updated Jul 10, 2026',
-                'status': 'Approved',
-                'tone': 'green',
-                'icon_tone': 'rose',
-            },
-            {
-                'name': 'Organizational_Chart_2025.pdf',
-                'department': 'Registrar',
-                'details': 'Area X · Level I · Admin. T. Magtibay · 0.9 MB',
-                'tags': ['Organization', 'Structure'],
-                'version': 'v1',
-                'updated': 'Updated Jul 9, 2026',
-                'status': 'Pending',
-                'tone': 'gold',
-                'icon_tone': 'rose',
-            },
-        ]
+            })
+        total = len(documents)
+        completed = submissions.filter(status__in={EvidenceSubmission.COMPLIED, EvidenceSubmission.CLOSED}).count()
+        pending = submissions.filter(status__in={EvidenceSubmission.NEEDS_REVISION, EvidenceSubmission.UNDER_DEAN_REVIEW, EvidenceSubmission.UNDER_AREA_CHAIR_REVIEW, EvidenceSubmission.UNDER_QA_REVIEW}).count()
         context.update(
             {
                 'page_title': 'Document Repository',
                 'departments': departments,
                 'documents': documents,
                 'repo_stats': [
-                    {'label': 'Total Documents', 'value': 6, 'tone': 'rose'},
-                    {'label': 'Approved', 'value': 3, 'tone': 'green'},
-                    {'label': 'Pending / Revision', 'value': 3, 'tone': 'rose'},
+                    {'label': 'Total Documents', 'value': total, 'tone': 'rose'},
+                    {'label': 'Approved / Closed', 'value': completed, 'tone': 'green'},
+                    {'label': 'Pending / Revision', 'value': pending, 'tone': 'gold'},
                 ],
             }
         )
         return context
 
 
-class CommunicationView(TemplateView):
+class CommunicationView(ApprovedUserRequiredMixin, TemplateView):
     template_name = 'resources/communication.html'
 
     def get_context_data(self, **kwargs):
@@ -143,17 +102,6 @@ class CommunicationView(TemplateView):
                 'context': 'College of Business (Dean)',
                 'preview': "Approved the Dean's review for Area V.",
                 'time': 'Yesterday',
-                'unread': 0,
-                'active': False,
-                'online': False,
-                'pinned': False,
-            },
-            {
-                'initials': 'EX',
-                'name': 'External Review Panel',
-                'context': 'Group · 3 members',
-                'preview': 'SYSTEM: External review window opens next week.',
-                'time': 'Jul 12',
                 'unread': 0,
                 'active': False,
                 'online': False,

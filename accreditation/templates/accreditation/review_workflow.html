@@ -70,7 +70,7 @@
                 <td>{{ item.reviewer }}</td>
                 <td class="review-date">{{ item.date }}</td>
                 <td>
-                  <button type="button" class="review-btn">{% icon 'search' %} Review</button>
+                  <a href="{{ item.review_url }}" class="review-btn">{% icon 'search' %} Review</a>
                 </td>
               </tr>
             {% endfor %}

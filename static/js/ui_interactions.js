@@ -291,8 +291,6 @@
     URL.revokeObjectURL(link.href);
   }
 
-  const profilePhotoStorageKey = 'jmcfi.profilePhoto';
-
   function applyProfilePhoto(photoUrl) {
     document.querySelectorAll('[data-profile-avatar]').forEach(function (avatar) {
       avatar.replaceChildren();
@@ -310,16 +308,9 @@
     });
   }
 
-  function getStoredProfilePhoto() {
-    try {
-      return window.localStorage.getItem(profilePhotoStorageKey) || '';
-    } catch (error) {
-      return '';
-    }
-  }
-
   function bindProfilePhoto() {
-    applyProfilePhoto(getStoredProfilePhoto());
+    const avatar = document.querySelector('[data-profile-avatar]');
+    applyProfilePhoto(avatar ? avatar.dataset.profilePhoto || '' : '');
 
     const input = document.querySelector('#profile-photo-input');
     if (!input) return;
@@ -352,13 +343,7 @@
         if (!photoUrl) return;
 
         applyProfilePhoto(photoUrl);
-        try {
-          window.localStorage.setItem(profilePhotoStorageKey, photoUrl);
-          showToast('Profile photo updated');
-        } catch (error) {
-          showToast('Profile photo updated for this session');
-        }
-        input.value = '';
+        showToast('Photo selected. Save changes to upload it.');
       });
       reader.addEventListener('error', function () {
         showToast('Could not read that photo');
@@ -384,11 +369,11 @@
 
     document.querySelectorAll('.save-settings-btn').forEach(function (button) {
       button.addEventListener('click', function () {
-        showToast('Changes saved locally');
+        showToast('Changes saved');
       });
     });
 
-    document.querySelectorAll('.upload-document-btn, .add-document-btn').forEach(function (button) {
+    document.querySelectorAll('.add-document-btn').forEach(function (button) {
       button.addEventListener('click', function () {
         const input = document.createElement('input');
         input.type = 'file';
@@ -414,26 +399,8 @@
   }
 
   function bindWorkspaceActions() {
-    const messages = {
-      submit: 'Submission sent for review',
-      resubmit: 'Submission resubmitted for review',
-      cancel: 'Submission changes cancelled',
-    };
-
-    document.querySelectorAll('.workspace-action-btn').forEach(function (button) {
-      button.addEventListener('click', function () {
-        const action = button.dataset.workspaceAction;
-        if (action === 'submit') {
-          const actionGroup = button.closest('.workspace-actions');
-          if (actionGroup) {
-            const resubmitButton = actionGroup.querySelector('[data-workspace-action="resubmit"]');
-            if (resubmitButton) resubmitButton.hidden = false;
-            button.hidden = true;
-          }
-        }
-        if (action && messages[action]) showToast(messages[action]);
-      });
-    });
+    // Workspace actions are regular server-backed forms. Keep this hook for
+    // compatibility with the existing page initialisation sequence.
   }
 
   function toneForRole(role) {
@@ -441,7 +408,7 @@
       'Program Head': 'blue',
       Dean: 'rose',
       'Area Chair': 'gold',
-      'External Accreditor': 'slate',
+      'Accreditation Head': 'maroon',
       QA: 'green',
     }[role] || 'slate';
   }

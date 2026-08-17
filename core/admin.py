@@ -1,3 +1,47 @@
 from django.contrib import admin
 
-# Register your models here.
+from .models import AuditLog, Department, Notification, Role, RoleAssignment, UserProfile
+
+
+@admin.register(Role)
+class RoleAdmin(admin.ModelAdmin):
+    list_display = ('code', 'name', 'is_internal', 'is_active', 'sort_order')
+    list_filter = ('is_internal', 'is_active')
+    search_fields = ('code', 'name')
+
+
+@admin.register(Department)
+class DepartmentAdmin(admin.ModelAdmin):
+    list_display = ('code', 'name', 'kind', 'parent', 'is_active')
+    list_filter = ('kind', 'is_active')
+    search_fields = ('code', 'name')
+
+
+@admin.register(UserProfile)
+class UserProfileAdmin(admin.ModelAdmin):
+    list_display = ('user', 'department', 'approval_status', 'is_demo_account', 'must_change_password', 'updated_at')
+    list_filter = ('approval_status', 'is_demo_account', 'must_change_password')
+    search_fields = ('user__username', 'user__email', 'user__first_name', 'user__last_name')
+
+
+@admin.register(RoleAssignment)
+class RoleAssignmentAdmin(admin.ModelAdmin):
+    list_display = ('user', 'role', 'department', 'is_approved', 'approved_at')
+    list_filter = ('role', 'is_approved')
+    search_fields = ('user__username', 'department__name', 'role__name')
+    filter_horizontal = ('assigned_areas',)
+
+
+@admin.register(Notification)
+class NotificationAdmin(admin.ModelAdmin):
+    list_display = ('user', 'title', 'kind', 'is_read', 'created_at')
+    list_filter = ('kind', 'is_read')
+    search_fields = ('user__username', 'title', 'message')
+
+
+@admin.register(AuditLog)
+class AuditLogAdmin(admin.ModelAdmin):
+    list_display = ('created_at', 'actor', 'action', 'object_type', 'object_id')
+    list_filter = ('action', 'object_type')
+    search_fields = ('actor__username', 'action', 'object_id')
+    readonly_fields = ('created_at',)
