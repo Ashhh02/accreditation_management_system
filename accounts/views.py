@@ -1,4 +1,5 @@
 from django.contrib.auth.views import LoginView
+from django.conf import settings
 from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth.forms import PasswordChangeForm
 from django.contrib.auth.mixins import LoginRequiredMixin
@@ -25,11 +26,41 @@ from .forms import (
 )
 
 
+DEMO_LOGIN_OPTIONS = (
+    {
+        'label': 'Admin',
+        'role': 'Full system access',
+        'username': 'admin',
+        'password': '123',
+        'initials': 'AD',
+    },
+    {
+        'label': 'Evidence Uploader',
+        'role': 'Prepare and submit evidence',
+        'username': 'uploader',
+        'password': '123',
+        'initials': 'EU',
+    },
+    {
+        'label': 'Approver',
+        'role': 'Review and approve evidence',
+        'username': 'approver',
+        'password': '123',
+        'initials': 'AP',
+    },
+)
+
+
 class PortalLoginView(LoginView):
     authentication_form = PortalAuthenticationForm
     template_name = 'accounts/login.html'
     redirect_authenticated_user = True
     extra_context = {'page_title': 'Sign in'}
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['demo_login_options'] = DEMO_LOGIN_OPTIONS if settings.DEMO_MODE else ()
+        return context
 
     def get_success_url(self):
         return self.get_redirect_url() or reverse('dashboard:index')

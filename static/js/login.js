@@ -22,4 +22,21 @@ document.addEventListener('DOMContentLoaded', function () {
       submitButton.querySelector('.login-submit-label').textContent = 'Signing in...';
     });
   }
+
+  document.querySelectorAll('[data-demo-login]').forEach(function (button) {
+    button.addEventListener('click', function () {
+      if (!loginForm) return;
+      const usernameInput = loginForm.querySelector('[name="username"]');
+      const passwordInput = loginForm.querySelector('[name="password"]');
+      if (!usernameInput || !passwordInput) return;
+
+      usernameInput.value = button.dataset.demoUsername || '';
+      passwordInput.value = button.dataset.demoPassword || '';
+      if (typeof loginForm.requestSubmit === 'function') {
+        loginForm.requestSubmit(submitButton);
+      } else {
+        loginForm.submit();
+      }
+    });
+  });
 });

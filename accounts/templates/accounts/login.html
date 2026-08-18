@@ -79,6 +79,37 @@
             </button>
           </form>
 
+          {% if demo_login_options %}
+            <section class="demo-login" aria-labelledby="demo-login-title">
+              <div class="demo-login-heading">
+                <div>
+                  <span class="demo-login-eyebrow">Development mode</span>
+                  <h2 id="demo-login-title">Quick sign in</h2>
+                </div>
+                <span class="demo-login-password">Password: 123</span>
+              </div>
+              <div class="demo-login-list">
+                {% for account in demo_login_options %}
+                  <button
+                    type="button"
+                    class="demo-login-button"
+                    data-demo-login
+                    data-demo-username="{{ account.username }}"
+                    data-demo-password="{{ account.password }}"
+                    aria-label="Sign in as {{ account.label }}"
+                  >
+                    <span class="demo-login-initials">{{ account.initials }}</span>
+                    <span class="demo-login-copy">
+                      <strong>{{ account.label }}</strong>
+                      <small>{{ account.role }}</small>
+                    </span>
+                    <span class="demo-login-arrow" aria-hidden="true">→</span>
+                  </button>
+                {% endfor %}
+              </div>
+            </section>
+          {% endif %}
+
           <p class="login-support">Need access? <a href="{% url 'register' %}">Request an account</a>.</p>
         </div>
 
