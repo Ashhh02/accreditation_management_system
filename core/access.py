@@ -1,4 +1,4 @@
-from django.db.models import Q
+from django.db.models import Case, IntegerField, Q, Value, When
 
 from .models import Department, RoleAssignment
 
@@ -111,7 +111,14 @@ def reviewer_assignments(role_code, submission):
         query = query.filter(department_id__in=reviewer_department_ids(submission.department))
     if role_code == 'AREA_CHAIR':
         query = query.filter(assigned_areas=submission.requirement.area_id)
-    return query.order_by('user_id')
+    return query.order_by(
+        Case(
+            When(user__username='approver', then=Value(0)),
+            default=Value(1),
+            output_field=IntegerField(),
+        ),
+        'user_id',
+    )
 
 
 def assignment_for_reviewer(user, submission, role_code=None):

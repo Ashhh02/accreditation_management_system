@@ -114,6 +114,20 @@ def site_nav(request):
         })
     nav_sections[-1]['items'] = admin_items
 
+    if request.user.is_authenticated and not is_admin_user(request.user):
+        assignment = active_assignment(request.user)
+        role_code = assignment.role.code if assignment else ''
+        if role_code == 'PROGRAM_HEAD':
+            nav_sections[1]['items'] = [
+                item for item in nav_sections[1]['items']
+                if item['url_name'] != 'accreditation:review_workflow'
+            ]
+        elif role_code in {'DEAN', 'AREA_CHAIR', 'QA', 'ACCREDITATION_HEAD'}:
+            nav_sections[1]['items'] = [
+                item for item in nav_sections[1]['items']
+                if item['url_name'] != 'accreditation:submission_workspace'
+            ]
+
     current_user_summary = {
         'name': 'Guest',
         'role': 'Sign in required',

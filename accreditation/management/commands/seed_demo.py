@@ -48,6 +48,8 @@ DEPARTMENT_DEFINITIONS = [
 DEMO_USERS = [
     ('superadmin', 'superadmin@jmcfi.edu.ph', 'Demo', 'Superadmin', 'SUPERADMIN', 'QA'),
     ('admin', 'admin@jmcfi.edu.ph', 'Demo', 'Admin', 'ADMIN', 'QA'),
+    ('uploader', 'uploader@jmcfi.edu.ph', 'Demo', 'Evidence Uploader', 'PROGRAM_HEAD', 'ENG-BSCIV'),
+    ('approver', 'approver@jmcfi.edu.ph', 'Demo', 'Approver', 'QA', 'QA'),
     ('qa', 'qa@jmcfi.edu.ph', 'Demo', 'QA', 'QA', 'QA'),
     ('accreditation-head', 'accreditation.head@jmcfi.edu.ph', 'Demo', 'Accreditation Head', 'ACCREDITATION_HEAD', 'QA'),
     ('program-head', 'program.head@jmcfi.edu.ph', 'Demo', 'Program Head', 'PROGRAM_HEAD', 'ENG-BSCIV'),
@@ -199,10 +201,10 @@ class Command(BaseCommand):
 
     def _seed_demo_submissions(self, areas, departments, roles, users):
         """Create repeatable evidence activity so development dashboards are useful."""
-        program_head = users['program-head']
+        program_head = users.get('uploader') or users['program-head']
         dean = users['dean']
         area_chair = users['area-chair']
-        qa = users['qa']
+        qa = users.get('approver') or users['qa']
         sample_departments = [
             departments['ENG-BSCIV'],
             departments['ENG'],
@@ -285,6 +287,27 @@ class Command(BaseCommand):
                 },
             )
             if not created:
+                demo_version = EvidenceVersion.objects.filter(
+                    submission=submission,
+                    notes='Seeded development demo evidence.',
+                ).first()
+                if demo_version:
+                    submission.program_head = program_head
+                    if status in reviewer_by_stage:
+                        submission.current_reviewer, submission.current_review_role = reviewer_by_stage[status]
+                    elif status == EvidenceSubmission.SUBMITTED:
+                        submission.current_reviewer, submission.current_review_role = reviewer_by_stage[EvidenceSubmission.UNDER_DEAN_REVIEW]
+                    elif status == EvidenceSubmission.NEEDS_REVISION:
+                        submission.current_reviewer = program_head
+                        submission.current_review_role = roles['PROGRAM_HEAD']
+                    submission.last_updated_by = submission.current_reviewer or program_head
+                    submission.save(update_fields=[
+                        'program_head',
+                        'current_reviewer',
+                        'current_review_role',
+                        'last_updated_by',
+                        'last_updated',
+                    ])
                 continue
             created_count += 1
 
