@@ -28,7 +28,7 @@ def site_nav(request):
             'label': 'Accreditation',
             'items': [
                 {
-                    'label': 'Levels & Areas',
+                    'label': 'PACUCOA',
                     'icon': 'layers',
                     'url_name': 'accreditation:levels_areas',
                 },
