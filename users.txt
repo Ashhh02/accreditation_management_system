@@ -11,7 +11,7 @@ ROLE                USERNAME                 EMAIL                              
 --------------------------------------------------------------------------------------------------------
 Admin               admin                    admin@jmcfi.edu.ph                 QA Office
 Evidence Uploader   uploader                 uploader@jmcfi.edu.ph              Bachelor of Science in Civil Engineering
-Approver            approver                 approver@jmcfi.edu.ph              QA Office
+Approver (Dean)      approver                 approver@jmcfi.edu.ph              College of Engineering
 
 OTHER INTERNAL WORKFLOW ACCOUNTS
 --------------------------------

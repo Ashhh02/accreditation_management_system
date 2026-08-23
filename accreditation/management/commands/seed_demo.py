@@ -4,6 +4,7 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
+from django.db.models import Q
 from django.utils import timezone
 
 from accreditation.evidence_data import EVIDENCE_ITEMS
@@ -49,7 +50,7 @@ DEMO_USERS = [
     ('superadmin', 'superadmin@jmcfi.edu.ph', 'Demo', 'Superadmin', 'SUPERADMIN', 'QA'),
     ('admin', 'admin@jmcfi.edu.ph', 'Demo', 'Admin', 'ADMIN', 'QA'),
     ('uploader', 'uploader@jmcfi.edu.ph', 'Demo', 'Evidence Uploader', 'PROGRAM_HEAD', 'ENG-BSCIV'),
-    ('approver', 'approver@jmcfi.edu.ph', 'Demo', 'Approver', 'QA', 'QA'),
+    ('approver', 'approver@jmcfi.edu.ph', 'Demo', 'Approver', 'DEAN', 'ENG'),
     ('qa', 'qa@jmcfi.edu.ph', 'Demo', 'QA', 'QA', 'QA'),
     ('accreditation-head', 'accreditation.head@jmcfi.edu.ph', 'Demo', 'Accreditation Head', 'ACCREDITATION_HEAD', 'QA'),
     ('program-head', 'program.head@jmcfi.edu.ph', 'Demo', 'Program Head', 'PROGRAM_HEAD', 'ENG-BSCIV'),
@@ -181,6 +182,13 @@ class Command(BaseCommand):
                     'approved_by': None,
                 },
             )
+            if username == 'approver':
+                # Remove the old QA/QA assignment created by earlier demo seeds.
+                RoleAssignment.objects.filter(
+                    user=user,
+                    role__code='QA',
+                    department=departments['QA'],
+                ).exclude(pk=assignment.pk).delete()
             assignment.assigned_areas.set(areas if role_code == 'AREA_CHAIR' else [])
             demo_assignments[username] = assignment
             demo_users[username] = user
@@ -202,9 +210,9 @@ class Command(BaseCommand):
     def _seed_demo_submissions(self, areas, departments, roles, users):
         """Create repeatable evidence activity so development dashboards are useful."""
         program_head = users.get('uploader') or users['program-head']
-        dean = users['dean']
+        dean = users.get('approver') or users['dean']
         area_chair = users['area-chair']
-        qa = users.get('approver') or users['qa']
+        qa = users['qa']
         sample_departments = [
             departments['ENG-BSCIV'],
             departments['ENG'],
@@ -217,6 +225,19 @@ class Command(BaseCommand):
             EvidenceSubmission.UNDER_AREA_CHAIR_REVIEW: (area_chair, roles['AREA_CHAIR']),
             EvidenceSubmission.UNDER_QA_REVIEW: (qa, roles['QA']),
         }
+        engineering_scope_ids = {departments['ENG'].id, departments['ENG-BSCIV'].id}
+
+        def reviewer_for_stage(stage, department):
+            if (
+                stage in {
+                    EvidenceSubmission.UNDER_DEAN_REVIEW,
+                    EvidenceSubmission.UNDER_AREA_CHAIR_REVIEW,
+                }
+                and department.id not in engineering_scope_ids
+            ):
+                return None, None
+            return reviewer_by_stage[stage]
+
         status_pattern = [
             EvidenceSubmission.CLOSED,
             EvidenceSubmission.COMPLIED,
@@ -252,16 +273,22 @@ class Command(BaseCommand):
             revision_return_role = None
 
             if status in reviewer_by_stage:
-                current_reviewer, current_review_role = reviewer_by_stage[status]
+                current_reviewer, current_review_role = reviewer_for_stage(status, department)
             elif status == EvidenceSubmission.SUBMITTED:
-                current_reviewer, current_review_role = reviewer_by_stage[EvidenceSubmission.UNDER_DEAN_REVIEW]
+                current_reviewer, current_review_role = reviewer_for_stage(
+                    EvidenceSubmission.UNDER_DEAN_REVIEW,
+                    department,
+                )
             elif status == EvidenceSubmission.NEEDS_REVISION:
                 revision_return_status = (
                     EvidenceSubmission.UNDER_DEAN_REVIEW,
                     EvidenceSubmission.UNDER_AREA_CHAIR_REVIEW,
                     EvidenceSubmission.UNDER_QA_REVIEW,
                 )[index % 3]
-                revision_return_reviewer, revision_return_role = reviewer_by_stage[revision_return_status]
+                revision_return_reviewer, revision_return_role = reviewer_for_stage(
+                    revision_return_status,
+                    department,
+                )
                 current_reviewer = program_head
                 current_review_role = roles['PROGRAM_HEAD']
 
@@ -294,9 +321,15 @@ class Command(BaseCommand):
                 if demo_version:
                     submission.program_head = program_head
                     if status in reviewer_by_stage:
-                        submission.current_reviewer, submission.current_review_role = reviewer_by_stage[status]
+                        submission.current_reviewer, submission.current_review_role = reviewer_for_stage(
+                            status,
+                            department,
+                        )
                     elif status == EvidenceSubmission.SUBMITTED:
-                        submission.current_reviewer, submission.current_review_role = reviewer_by_stage[EvidenceSubmission.UNDER_DEAN_REVIEW]
+                        submission.current_reviewer, submission.current_review_role = reviewer_for_stage(
+                            EvidenceSubmission.UNDER_DEAN_REVIEW,
+                            department,
+                        )
                     elif status == EvidenceSubmission.NEEDS_REVISION:
                         submission.current_reviewer = program_head
                         submission.current_review_role = roles['PROGRAM_HEAD']
@@ -340,6 +373,39 @@ class Command(BaseCommand):
                 roles=roles,
                 program_head=program_head,
             )
+
+        # Reconcile rows created by earlier demo seeds so the active reviewer
+        # matches the current Engineering Dean demo account and its scope.
+        demo_submissions = EvidenceSubmission.objects.filter(
+            status__in=(
+                EvidenceSubmission.SUBMITTED,
+                EvidenceSubmission.UNDER_DEAN_REVIEW,
+                EvidenceSubmission.UNDER_AREA_CHAIR_REVIEW,
+            ),
+        ).filter(
+            Q(versions__notes='Seeded development demo evidence.')
+            | Q(current_reviewer=users['dean'])
+        ).select_related('department').distinct()
+        for submission in demo_submissions:
+            stage = (
+                EvidenceSubmission.UNDER_DEAN_REVIEW
+                if submission.status == EvidenceSubmission.SUBMITTED
+                else submission.status
+            )
+            reviewer, reviewer_role = reviewer_for_stage(stage, submission.department)
+            if (
+                submission.current_reviewer_id != getattr(reviewer, 'id', None)
+                or submission.current_review_role_id != getattr(reviewer_role, 'id', None)
+            ):
+                submission.current_reviewer = reviewer
+                submission.current_review_role = reviewer_role
+                submission.last_updated_by = reviewer or program_head
+                submission.save(update_fields=[
+                    'current_reviewer',
+                    'current_review_role',
+                    'last_updated_by',
+                    'last_updated',
+                ])
         return created_count
 
     @staticmethod
