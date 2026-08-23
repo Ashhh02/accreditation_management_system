@@ -301,6 +301,15 @@
   color: var(--maroon-700);
 }
 
+.topbar-logout-form {
+  margin: 0;
+}
+
+.topbar-logout-form .btn {
+  font: inherit;
+  cursor: pointer;
+}
+
 .btn-primary {
   background: var(--maroon-800);
   color: #fff;

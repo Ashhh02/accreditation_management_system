@@ -20,6 +20,13 @@
       {% icon 'chevron-down' 'icon' %}
     </a>
 
+    <a href="{% url 'login' %}" class="btn btn-outline">Switch Account</a>
+
+    <form method="post" action="{% url 'logout' %}" class="topbar-logout-form">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-outline">Sign out</button>
+    </form>
+
     <div class="topbar-user">
       <div class="avatar-chip" data-profile-avatar data-profile-initials="{{ current_user_summary.initials }}" data-profile-photo="{{ current_user_summary.photo_url }}">{{ current_user_summary.initials }}</div>
       <div>

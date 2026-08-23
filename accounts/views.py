@@ -54,7 +54,9 @@ DEMO_LOGIN_OPTIONS = (
 class PortalLoginView(LoginView):
     authentication_form = PortalAuthenticationForm
     template_name = 'accounts/login.html'
-    redirect_authenticated_user = True
+    # Allow an authenticated development user to return to the account picker
+    # and switch between the Admin, Uploader, and Approver demo personas.
+    redirect_authenticated_user = False
     extra_context = {'page_title': 'Sign in'}
 
     def get_context_data(self, **kwargs):
