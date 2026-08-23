@@ -22,18 +22,6 @@
     </header>
 
     <section class="repo-layout">
-      <aside class="department-panel">
-        <div class="department-title">Departments</div>
-        <div class="department-list">
-          {% for department in departments %}
-            <button type="button" class="department-item{% if department.active %} is-active{% endif %}">
-              {% icon 'folder' %}
-              <span>{{ department.label }}</span>
-            </button>
-          {% endfor %}
-        </div>
-      </aside>
-
       <main class="repo-main">
         <section class="repo-toolbar" aria-label="Document search and filters">
           <label class="repo-search">

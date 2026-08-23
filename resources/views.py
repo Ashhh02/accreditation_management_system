@@ -20,9 +20,6 @@ class DocumentRepositoryView(ApprovedUserRequiredMixin, TemplateView):
             'version__submission__department',
             'version__submission__program_head',
         )
-        departments = [{'label': 'All Documents', 'active': True}]
-        department_names = list(evidence_files.values_list('version__submission__department__name', flat=True).distinct())
-        departments.extend({'label': name, 'active': False} for name in department_names)
         documents = []
         for evidence_file in evidence_files:
             submission = evidence_file.version.submission
@@ -45,7 +42,6 @@ class DocumentRepositoryView(ApprovedUserRequiredMixin, TemplateView):
         context.update(
             {
                 'page_title': 'Document Repository',
-                'departments': departments,
                 'documents': documents,
                 'repo_stats': [
                     {'label': 'Total Documents', 'value': total, 'tone': 'rose'},
