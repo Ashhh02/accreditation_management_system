@@ -2,7 +2,7 @@ from django.views.generic import TemplateView
 
 from accreditation.db_views import status_label, status_tone
 from accreditation.models import EvidenceFile, EvidenceSubmission
-from core.access import accessible_submissions
+from core.access import accessible_repository_submissions
 from core.mixins import ApprovedUserRequiredMixin
 
 
@@ -11,7 +11,7 @@ class DocumentRepositoryView(ApprovedUserRequiredMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        submissions = accessible_submissions(self.request.user)
+        submissions = accessible_repository_submissions(self.request.user)
         evidence_files = EvidenceFile.objects.filter(
             version__submission__in=submissions,
         ).select_related(

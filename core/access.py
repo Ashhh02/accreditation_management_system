@@ -168,3 +168,19 @@ def accessible_submissions(user):
                 requirement__area_id__in=area_ids,
             )
     return EvidenceSubmission.objects.filter(query).distinct()
+
+
+def accessible_repository_submissions(user):
+    """Return repository submissions limited to the user's active department."""
+    submissions = accessible_submissions(user)
+    if not user or not user.is_authenticated:
+        return submissions
+    if is_admin_user(user) or has_role(user, 'QA'):
+        return submissions
+
+    assignment = active_assignment(user)
+    if not assignment:
+        return submissions.none()
+    return submissions.filter(
+        department_id__in=department_scope_ids(assignment.department),
+    )
