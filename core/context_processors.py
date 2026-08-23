@@ -5,6 +5,9 @@ never hardcodes a link — add a section/item here and it shows up
 everywhere automatically.
 """
 
+from django.urls import reverse
+from django.utils.timesince import timesince
+
 from .access import active_assignment, can_approve_accounts, is_admin_user
 from .models import Notification
 
@@ -18,12 +21,6 @@ def site_nav(request):
                     'label': 'Dashboard',
                     'icon': 'grid',
                     'url_name': 'dashboard:index',
-                },
-                {
-                    'label': 'Notifications',
-                    'icon': 'bell',
-                    'url_name': 'core:notifications',
-                    'badge': 7,
                 },
             ],
         },
@@ -136,6 +133,7 @@ def site_nav(request):
         'photo_url': '',
     }
     notification_count = 0
+    notification_preview = []
     if request.user.is_authenticated:
         assignment = active_assignment(request.user)
         profile = getattr(request.user, 'profile', None)
@@ -148,15 +146,21 @@ def site_nav(request):
             'initials': initials,
             'photo_url': profile.photo.url if profile and profile.photo else '',
         }
-        notification_count = Notification.objects.filter(user=request.user, is_read=False).count()
-
-    for section in nav_sections:
-        for item in section['items']:
-            if item.get('url_name') == 'core:notifications':
-                item['badge'] = notification_count
+        user_notifications = Notification.objects.filter(user=request.user).select_related('submission')
+        notification_count = user_notifications.filter(is_read=False).count()
+        for notification in user_notifications[:5]:
+            notification_preview.append({
+                'title': notification.title,
+                'message': notification.message,
+                'time_label': f'{timesince(notification.created_at)} ago',
+                'unread': not notification.is_read,
+                'url': reverse('accreditation:evidence_detail', args=[notification.submission_id])
+                if notification.submission_id else reverse('core:notifications'),
+            })
 
     return {
         'nav_sections': nav_sections,
         'current_user_summary': current_user_summary,
         'notification_count': notification_count,
+        'notification_preview': notification_preview,
     }

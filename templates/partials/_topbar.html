@@ -8,12 +8,43 @@
       <input type="search" placeholder="Search submissions...">
     </label>
 
-    <a href="{% url 'core:notifications' %}" class="icon-btn" aria-label="Notifications">
-      {% icon 'bell' %}
-      {% if notification_count %}
-        <span class="dot-badge">{{ notification_count }}</span>
-      {% endif %}
-    </a>
+    <div class="notification-menu" data-notification-menu>
+      <button
+        type="button"
+        class="icon-btn"
+        data-notification-trigger
+        aria-label="Open notifications"
+        aria-expanded="false"
+        aria-controls="notification-popover"
+      >
+        {% icon 'bell' %}
+        {% if notification_count %}
+          <span class="dot-badge">{{ notification_count }}</span>
+        {% endif %}
+      </button>
+
+      <div class="notification-popover" id="notification-popover" data-notification-popover hidden>
+        <div class="notification-popover-head">
+          <strong>Notifications</strong>
+          {% if notification_count %}<span>{{ notification_count }} unread</span>{% endif %}
+        </div>
+        <div class="notification-popover-list">
+          {% for notification in notification_preview %}
+            <a href="{{ notification.url }}" class="notification-popover-item{% if notification.unread %} is-unread{% endif %}">
+              <span class="notification-popover-dot"></span>
+              <span class="notification-popover-copy">
+                <strong>{{ notification.title }}</strong>
+                <small>{{ notification.message }}</small>
+                <em>{{ notification.time_label }}</em>
+              </span>
+            </a>
+          {% empty %}
+            <p class="notification-popover-empty">No notifications yet.</p>
+          {% endfor %}
+        </div>
+        <a href="{% url 'core:notifications' %}" class="notification-see-all">See all <span aria-hidden="true">→</span></a>
+      </div>
+    </div>
 
     <a href="{% url 'accounts:select_role' %}" class="btn btn-outline">
       Switch Role

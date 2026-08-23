@@ -162,6 +162,35 @@
     });
   }
 
+  function bindNotificationMenu() {
+    document.querySelectorAll('[data-notification-menu]').forEach(function (menu) {
+      const trigger = menu.querySelector('[data-notification-trigger]');
+      const popover = menu.querySelector('[data-notification-popover]');
+      if (!trigger || !popover) return;
+
+      function closePopover() {
+        popover.hidden = true;
+        trigger.setAttribute('aria-expanded', 'false');
+      }
+
+      trigger.addEventListener('click', function (event) {
+        event.stopPropagation();
+        const isOpen = !popover.hidden;
+        popover.hidden = isOpen;
+        trigger.setAttribute('aria-expanded', isOpen ? 'false' : 'true');
+      });
+
+      popover.addEventListener('click', function (event) {
+        event.stopPropagation();
+      });
+
+      document.addEventListener('click', closePopover);
+      document.addEventListener('keydown', function (event) {
+        if (event.key === 'Escape') closePopover();
+      });
+    });
+  }
+
   function addChatMessage(input, listSelector, mineClass) {
     const text = input.value.trim();
     if (!text) {
@@ -507,6 +536,7 @@
     bindSelectableGroups();
     bindSettingsTabs();
     bindNotifications();
+    bindNotificationMenu();
     bindMessaging();
     bindProfilePhoto();
     bindActionButtons();
