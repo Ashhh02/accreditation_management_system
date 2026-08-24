@@ -161,6 +161,17 @@ class AccreditationWorkflowTests(TestCase):
         submission = EvidenceSubmission.objects.get(requirement=self.requirement, department=self.program)
         self.assertEqual(self.client.get(reverse('accreditation:evidence_detail', args=[submission.id])).status_code, 200)
 
+    def test_my_tasks_landing_shows_assigned_and_missing_instead_of_subareas(self):
+        self.client.force_login(self.program_head)
+
+        response = self.client.get(reverse('accreditation:submission_workspace'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'My Tasks')
+        self.assertContains(response, 'Assigned')
+        self.assertContains(response, 'Missing')
+        self.assertNotContains(response, 'Sub-Areas')
+
     def test_workspace_submit_button_uses_the_workflow_service(self):
         submission = self.make_submission()
         submission.self_evaluation = 'Prepared self evaluation'

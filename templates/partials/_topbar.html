@@ -1,13 +1,15 @@
 {% load nav_extras %}
 <header class="topbar">
-  <div class="topbar-title{% if hide_topbar_title %} topbar-title-hidden{% endif %}">{% block topbar_title %}{{ page_title|default:"Dashboard" }}{% endblock %}</div>
-
-  <div class="topbar-right">
+  <div class="topbar-left">
     <label class="search-field">
       {% icon 'search' %}
       <input type="search" placeholder="Search submissions...">
     </label>
 
+    <div class="topbar-title{% if hide_topbar_title %} topbar-title-hidden{% endif %}">{% block topbar_title %}{{ page_title|default:"Dashboard" }}{% endblock %}</div>
+  </div>
+
+  <div class="topbar-right">
     <div class="notification-menu" data-notification-menu>
       <button
         type="button"

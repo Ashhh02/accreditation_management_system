@@ -21,11 +21,80 @@
 
     <header class="workspace-header">
       <div class="workspace-header-copy">
-        <h1>{{ workspace.area_code }} - {{ workspace.area_name }}</h1>
-        <p>{{ workspace.department }} · Program Head: {{ workspace.program_head }}</p>
+        {% if workspace.is_task_landing %}
+          <h1>My Tasks</h1>
+          <p>{{ workspace.department }} · Track assigned evidence work and missing requirements.</p>
+        {% else %}
+          <h1>{{ workspace.area_code }} - {{ workspace.area_name }}</h1>
+          <p>{{ workspace.department }} · Program Head: {{ workspace.program_head }}</p>
+        {% endif %}
       </div>
     </header>
 
+    {% if workspace.is_task_landing %}
+      <section class="task-summary-grid" aria-label="Task summary">
+        <article class="task-summary-card">
+          <span>Assigned</span>
+          <strong>{{ workspace.assigned_count }}</strong>
+          <p>Sub-areas that need your preparation or revision.</p>
+        </article>
+        <article class="task-summary-card task-summary-card-missing">
+          <span>Missing</span>
+          <strong>{{ workspace.missing_count }}</strong>
+          <p>Sub-areas with evidence requirements still missing.</p>
+        </article>
+      </section>
+
+      <section class="task-columns">
+        <section class="workspace-card task-card">
+          <div class="task-card-head">
+            <div>
+              <h2>{% icon 'clipboard' %} Assigned</h2>
+              <p>Items currently assigned to you.</p>
+            </div>
+            <span class="task-count">{{ workspace.assigned_count }}</span>
+          </div>
+          <div class="task-list">
+            {% for task in workspace.assigned_tasks %}
+              <a class="task-row" href="{% if task.subarea_key %}{% url 'accreditation:submission_workspace_subarea' task.area_key task.subarea_key %}{% else %}{% url 'accreditation:area_details' task.area_key %}{% endif %}">
+                <span class="task-code">{{ task.code }}</span>
+                <span class="task-copy">
+                  <strong>{{ task.title }}</strong>
+                  <small>{{ task.area_code }} · {{ task.submitted_count }}/{{ task.requirement_count }} requirements prepared{% if task.missing_count %} · {{ task.missing_count }} missing{% endif %}</small>
+                </span>
+                <em class="status-pill tone-{{ task.tone }}">{{ task.status }}</em>
+              </a>
+            {% empty %}
+              <p class="task-empty">You have no assigned evidence tasks right now.</p>
+            {% endfor %}
+          </div>
+        </section>
+
+        <section class="workspace-card task-card">
+          <div class="task-card-head">
+            <div>
+              <h2>{% icon 'alert' %} Missing</h2>
+              <p>Sub-areas with requirements that still need an evidence submission.</p>
+            </div>
+            <span class="task-count task-count-missing">{{ workspace.missing_count }}</span>
+          </div>
+          <div class="task-list">
+            {% for task in workspace.missing_tasks %}
+              <a class="task-row" href="{% if task.subarea_key %}{% url 'accreditation:submission_workspace_subarea' task.area_key task.subarea_key %}{% else %}{% url 'accreditation:area_details' task.area_key %}{% endif %}">
+                <span class="task-code">{{ task.code }}</span>
+                <span class="task-copy">
+                  <strong>{{ task.title }}</strong>
+                  <small>{{ task.area_code }} · {{ task.missing_count }}/{{ task.requirement_count }} requirements missing</small>
+                </span>
+                <em class="status-pill tone-rose">Missing</em>
+              </a>
+            {% empty %}
+              <p class="task-empty">No missing evidence requirements.</p>
+            {% endfor %}
+          </div>
+        </section>
+      </section>
+    {% else %}
     <section class="workspace-layout">
       <aside class="subarea-panel">
         <div class="subarea-title">Sub-Areas</div>
@@ -173,5 +242,6 @@
         </section>
       </aside>
     </section>
+    {% endif %}
   </div>
 {% endblock %}

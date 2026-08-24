@@ -8,6 +8,7 @@ from core.access import (
     accessible_submissions,
     active_assignment,
     assignment_for_reviewer,
+    department_scope_ids,
     has_role,
     is_admin_user,
 )
@@ -224,6 +225,110 @@ class SubmissionWorkspaceView(ApprovedUserRequiredMixin, TemplateView):
             result[requirement.id] = submission
         return result
 
+    def _get_task_workspace(self):
+        cycle = _current_cycle()
+        assignment = active_assignment(self.request.user)
+        department = assignment.department if assignment else None
+        empty_workspace = {
+            'is_task_landing': True,
+            'department': department.name if department else 'No active department',
+            'assigned_tasks': [],
+            'missing_tasks': [],
+            'assigned_count': 0,
+            'missing_count': 0,
+        }
+        if not cycle:
+            return empty_workspace
+
+        submissions = _scoped_submissions(self.request.user).filter(
+            requirement__area__level__cycle=cycle,
+        )
+        if not is_admin_user(self.request.user):
+            if not assignment:
+                return empty_workspace
+            submissions = submissions.filter(
+                department_id__in=department_scope_ids(assignment.department),
+            )
+
+        requirements = list(
+            EvidenceRequirement.objects.filter(area__level__cycle=cycle)
+            .select_related('area', 'subarea')
+            .order_by('area__sort_order', 'subarea__sort_order', 'sort_order', 'code')
+        )
+
+        requirement_ids = {requirement.id for requirement in requirements}
+        submissions = submissions.filter(requirement_id__in=requirement_ids)
+        groups = {}
+        for requirement in requirements:
+            subarea = requirement.subarea
+            group_key = ('subarea', subarea.id) if subarea else ('area', requirement.area.id)
+            group = groups.setdefault(group_key, {
+                'code': subarea.code if subarea else requirement.area.code,
+                'title': subarea.title if subarea else requirement.area.name,
+                'area_code': requirement.area.code,
+                'area_name': requirement.area.name,
+                'area_key': requirement.area.slug,
+                'subarea_code': subarea.code if subarea else '',
+                'subarea_title': subarea.title if subarea else '',
+                'subarea_key': subarea.code.replace('.', '-') if subarea else '',
+                'requirement_ids': set(),
+                'submitted_requirement_ids': set(),
+                'action_statuses': set(),
+            })
+            group['requirement_ids'].add(requirement.id)
+
+        for submission in submissions:
+            subarea = submission.requirement.subarea
+            group_key = ('subarea', subarea.id) if subarea else ('area', submission.requirement.area.id)
+            group = groups.get(group_key)
+            if not group:
+                continue
+            group['submitted_requirement_ids'].add(submission.requirement_id)
+            if submission.status in {EvidenceSubmission.DRAFT, EvidenceSubmission.NEEDS_REVISION}:
+                group['action_statuses'].add(submission.status)
+
+        def finalize_group(group, missing=False):
+            if missing:
+                status = 'Missing'
+                tone = 'rose'
+            elif EvidenceSubmission.NEEDS_REVISION in group['action_statuses']:
+                status = status_label(EvidenceSubmission.NEEDS_REVISION)
+                tone = status_tone(EvidenceSubmission.NEEDS_REVISION)
+            else:
+                status = status_label(EvidenceSubmission.DRAFT)
+                tone = status_tone(EvidenceSubmission.DRAFT)
+            return {
+                key: value
+                for key, value in group.items()
+                if key not in {'requirement_ids', 'submitted_requirement_ids', 'action_statuses'}
+            } | {
+                'requirement_count': len(group['requirement_ids']),
+                'submitted_count': len(group['submitted_requirement_ids']),
+                'missing_count': len(group['requirement_ids'] - group['submitted_requirement_ids']),
+                'status': status,
+                'tone': tone,
+            }
+
+        assigned_tasks = [
+            finalize_group(group)
+            for group in groups.values()
+            if group['action_statuses']
+        ]
+        missing_tasks = [
+            finalize_group(group, missing=True)
+            for group in groups.values()
+            if group['requirement_ids'] - group['submitted_requirement_ids']
+        ]
+        assigned_tasks.sort(key=lambda item: (item['area_code'], item['subarea_code'], item['code']))
+        missing_tasks.sort(key=lambda item: (item['area_code'], item['subarea_code'], item['code']))
+        return {
+            **empty_workspace,
+            'assigned_tasks': assigned_tasks,
+            'missing_tasks': missing_tasks,
+            'assigned_count': len(assigned_tasks),
+            'missing_count': len(missing_tasks),
+        }
+
     def _get_workspace(self, area_key, subarea_key=None):
         area = get_object_or_404(
             AccreditationArea.objects.select_related('level', 'level__cycle').prefetch_related('subareas__evidence_requirements'),
@@ -348,18 +453,22 @@ class SubmissionWorkspaceView(ApprovedUserRequiredMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        area_key = kwargs.get('area_key') or 'area-i'
-        workspace = self._get_workspace(area_key, kwargs.get('subarea_key'))
+        area_key = kwargs.get('area_key')
+        workspace = (
+            self._get_task_workspace()
+            if not area_key
+            else self._get_workspace(area_key, kwargs.get('subarea_key'))
+        )
         context.update({
-            'page_title': 'Evidence Workspace',
+            'page_title': 'My Tasks',
             'workspace': workspace,
-            'sub_areas': workspace['sub_areas'],
-            'documents': workspace['documents'],
-            'remarks': workspace['remarks'],
-            'missing_requirements': workspace['missing_requirements'],
-            'evidence_items': workspace['instructions'],
-            'can_submit': workspace['can_submit'],
-            'can_resubmit': workspace['can_resubmit'],
+            'sub_areas': workspace.get('sub_areas', []),
+            'documents': workspace.get('documents', []),
+            'remarks': workspace.get('remarks', []),
+            'missing_requirements': workspace.get('missing_requirements', []),
+            'evidence_items': workspace.get('instructions', []),
+            'can_submit': workspace.get('can_submit', False),
+            'can_resubmit': workspace.get('can_resubmit', False),
         })
         return context
 
@@ -373,7 +482,7 @@ class EvidenceDetailView(ApprovedUserRequiredMixin, View):
     def get_context(self, request, submission, form=None):
         latest = submission.latest_version
         return {
-            'page_title': 'Evidence Workspace',
+            'page_title': 'My Tasks',
             'submission': submission,
             'requirement': submission.requirement,
             'area': submission.requirement.area,

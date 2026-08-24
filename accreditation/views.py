@@ -431,7 +431,7 @@ class SubmissionWorkspaceView(ApprovedUserRequiredMixin, TemplateView):
             workspace = self._get_subarea_workspace(area_key, subarea_key)
             context.update(
                 {
-                    'page_title': 'Evidence Workspace',
+                    'page_title': 'My Tasks',
                     'workspace': workspace,
                     'sub_areas': workspace['sub_areas'],
                     'documents': workspace['documents'],
@@ -515,7 +515,7 @@ class SubmissionWorkspaceView(ApprovedUserRequiredMixin, TemplateView):
         workspace = {**workspaces.get(area_key, workspaces['area-iii']), 'area_key': area_key}
         context.update(
             {
-                'page_title': 'Evidence Workspace',
+                'page_title': 'My Tasks',
                 'workspace': workspace,
                 'sub_areas': workspace['sub_areas'],
                 'documents': workspace['documents'],

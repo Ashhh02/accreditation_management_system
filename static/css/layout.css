@@ -211,6 +211,13 @@
   visibility: hidden;
 }
 
+.topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  min-width: 0;
+}
+
 .topbar-right {
   display: flex;
   align-items: center;
