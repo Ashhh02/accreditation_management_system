@@ -51,6 +51,7 @@ class AccreditationWorkflowTests(TestCase):
             code='1.1.1',
             title='Mission evidence',
             required_description='Provide the approved mission document.',
+            deadline=timezone.localdate(),
         )
         cls.revision_requirement = EvidenceRequirement.objects.create(
             area=cls.area,
@@ -170,6 +171,7 @@ class AccreditationWorkflowTests(TestCase):
         self.assertContains(response, 'My Tasks')
         self.assertContains(response, 'Assigned')
         self.assertContains(response, 'Missing')
+        self.assertContains(response, 'Deadline:')
         self.assertNotContains(response, 'Sub-Areas')
 
     def test_workspace_submit_button_uses_the_workflow_service(self):

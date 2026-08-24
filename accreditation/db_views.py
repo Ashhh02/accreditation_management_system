@@ -2,6 +2,7 @@ from django.contrib import messages
 from django.core.exceptions import PermissionDenied
 from django.db import transaction
 from django.shortcuts import get_object_or_404, redirect, render
+from django.utils import timezone
 from django.views.generic import TemplateView, View
 
 from core.access import (
@@ -274,8 +275,11 @@ class SubmissionWorkspaceView(ApprovedUserRequiredMixin, TemplateView):
                 'requirement_ids': set(),
                 'submitted_requirement_ids': set(),
                 'action_statuses': set(),
+                'deadline_values': [],
             })
             group['requirement_ids'].add(requirement.id)
+            if requirement.deadline:
+                group['deadline_values'].append(requirement.deadline)
 
         for submission in submissions:
             subarea = submission.requirement.subarea
@@ -300,11 +304,20 @@ class SubmissionWorkspaceView(ApprovedUserRequiredMixin, TemplateView):
             return {
                 key: value
                 for key, value in group.items()
-                if key not in {'requirement_ids', 'submitted_requirement_ids', 'action_statuses'}
+                if key not in {
+                    'requirement_ids',
+                    'submitted_requirement_ids',
+                    'action_statuses',
+                    'deadline_values',
+                }
             } | {
                 'requirement_count': len(group['requirement_ids']),
                 'submitted_count': len(group['submitted_requirement_ids']),
                 'missing_count': len(group['requirement_ids'] - group['submitted_requirement_ids']),
+                'deadline': min(group['deadline_values']) if group['deadline_values'] else None,
+                'deadline_overdue': bool(
+                    group['deadline_values'] and min(group['deadline_values']) < timezone.localdate()
+                ),
                 'status': status,
                 'tone': tone,
             }

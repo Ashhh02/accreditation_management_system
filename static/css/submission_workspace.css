@@ -197,6 +197,15 @@
   white-space: nowrap;
 }
 
+.task-copy .task-deadline {
+  color: var(--maroon-700);
+  font-weight: 700;
+}
+
+.task-copy .task-deadline.is-overdue {
+  color: #bf164c;
+}
+
 .task-empty {
   padding: 28px 20px;
   color: var(--color-text-faint);

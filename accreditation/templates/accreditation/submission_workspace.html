@@ -61,6 +61,7 @@
                 <span class="task-copy">
                   <strong>{{ task.title }}</strong>
                   <small>{{ task.area_code }} · {{ task.submitted_count }}/{{ task.requirement_count }} requirements prepared{% if task.missing_count %} · {{ task.missing_count }} missing{% endif %}</small>
+                  <small class="task-deadline{% if task.deadline_overdue %} is-overdue{% endif %}">Deadline: {% if task.deadline %}{{ task.deadline|date:"M d, Y" }}{% else %}Not set{% endif %}</small>
                 </span>
                 <em class="status-pill tone-{{ task.tone }}">{{ task.status }}</em>
               </a>
@@ -85,6 +86,7 @@
                 <span class="task-copy">
                   <strong>{{ task.title }}</strong>
                   <small>{{ task.area_code }} · {{ task.missing_count }}/{{ task.requirement_count }} requirements missing</small>
+                  <small class="task-deadline{% if task.deadline_overdue %} is-overdue{% endif %}">Deadline: {% if task.deadline %}{{ task.deadline|date:"M d, Y" }}{% else %}Not set{% endif %}</small>
                 </span>
                 <em class="status-pill tone-rose">Missing</em>
               </a>

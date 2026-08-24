@@ -87,6 +87,7 @@ class EvidenceRequirement(models.Model):
     code = models.CharField(max_length=30)
     title = models.CharField(max_length=300)
     required_description = models.TextField(blank=True)
+    deadline = models.DateField(null=True, blank=True)
     sort_order = models.PositiveSmallIntegerField(default=0)
     is_required = models.BooleanField(default=True)
 

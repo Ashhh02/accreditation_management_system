@@ -136,6 +136,7 @@ class Command(BaseCommand):
                             'subarea': subarea_obj,
                             'title': evidence_title,
                             'required_description': f'Supporting evidence for {evidence_title}.',
+                            'deadline': timezone.localdate() + timedelta(days=14 + order * 5 + evidence_order),
                             'sort_order': evidence_order,
                             'is_required': True,
                         },

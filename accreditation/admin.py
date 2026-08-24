@@ -44,7 +44,7 @@ class AccreditationSubAreaAdmin(admin.ModelAdmin):
 
 @admin.register(EvidenceRequirement)
 class EvidenceRequirementAdmin(admin.ModelAdmin):
-    list_display = ('code', 'title', 'area', 'subarea', 'is_required', 'sort_order')
+    list_display = ('code', 'title', 'area', 'subarea', 'deadline', 'is_required', 'sort_order')
     list_filter = ('area__level', 'area', 'is_required')
     search_fields = ('code', 'title', 'required_description')
 
