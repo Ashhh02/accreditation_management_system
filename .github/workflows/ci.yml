@@ -1,0 +1,73 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+permissions:
+  contents: read
+
+jobs:
+  test-and-sonarqube:
+    name: Django tests + SonarQube Cloud
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt', 'requirements-dev.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-dev.txt
+
+      - name: Django system checks
+        run: python manage.py check
+
+      - name: Lint and static security checks
+        run: |
+          flake8 config core accounts accreditation resources intelligence dashboard --exit-zero
+          bandit -r config core accounts accreditation resources intelligence dashboard -x migrations
+
+      - name: Run tests with coverage
+        run: |
+          coverage erase
+          coverage run manage.py test --noinput
+          coverage xml -o coverage.xml
+
+      - name: SonarQube Cloud scan
+        uses: SonarSource/sonarqube-scan-action@v6.0.0
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          args: >-
+            -Dsonar.projectKey=Ashhh02_accreditation_management_system
+            -Dsonar.organization=new-organi
+
+      - name: Retrieve SonarQube Quality Gate result
+        id: quality-gate
+        timeout-minutes: 5
+        uses: SonarSource/sonarqube-quality-gate-action@v1.2.0
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+      - name: Surface SonarQube Quality Gate status
+        run: |
+          echo "SonarQube Quality Gate: ${{ steps.quality-gate.outputs.quality-gate-status }}"

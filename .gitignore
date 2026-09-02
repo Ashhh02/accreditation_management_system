@@ -4,3 +4,11 @@ db.sqlite3
 staticfiles/
 .env
 .venv/
+media/
+*.secret
+zap-report.*
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+.sonarqube/
