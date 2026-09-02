@@ -44,9 +44,13 @@ jobs:
           HOST: ${{ secrets.SERVER_HOST }}
           USER: ${{ secrets.SERVER_USER }}
           KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          DEPLOY_IMAGE_TAG: ${{ github.sha }}
         run: |
           mkdir -p ~/.ssh
           echo "$KEY" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
           ssh -o StrictHostKeyChecking=accept-new -i ~/.ssh/deploy_key "$USER@$HOST" \
-            "cd /opt/ams && git pull --ff-only && docker compose pull web && docker compose up -d --build web"
+            "cd /opt/ams && git pull --ff-only && \
+             echo '${{ secrets.GHCR_TOKEN }}' | docker login ghcr.io -u '${{ github.actor }}' --password-stdin && \
+             DEPLOY_IMAGE_TAG='${{ github.sha }}' docker compose pull web && \
+             DEPLOY_IMAGE_TAG='${{ github.sha }}' docker compose up -d web"

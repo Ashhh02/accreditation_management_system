@@ -59,8 +59,8 @@
           <p class="review-assignment">You are the assigned reviewer for this stage.</p>
           <form method="post" class="evidence-form">
             {% csrf_token %}
-            <label><span>Decision</span>{{ form.action }}</label>
-            <label><span>Remarks</span>{{ form.remarks }}{% for error in form.remarks.errors %}<em>{{ error }}</em>{% endfor %}</label>
+            <label for="{{ form.action.id_for_label }}"><span>Decision</span>{{ form.action }}</label>
+            <label for="{{ form.remarks.id_for_label }}"><span>Remarks</span>{{ form.remarks }}{% for error in form.remarks.errors %}<em>{{ error }}</em>{% endfor %}</label>
             <button type="submit" class="evidence-primary-btn">Save review decision</button>
           </form>
         </section>

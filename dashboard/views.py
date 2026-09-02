@@ -19,6 +19,22 @@ ACTIVE_REVIEW_STATUSES = {
     EvidenceSubmission.UNDER_QA_REVIEW,
 }
 
+ACTIVITY_TONES = {
+    'APPROVED': 'green',
+    'COMPLIED': 'green',
+    'CLOSED': 'green',
+    'REQUEST_REVISION': 'maroon',
+    'NON_COMPLIED': 'maroon',
+}
+
+
+def _readiness_tone(value):
+    if value >= 80:
+        return 'green'
+    if value >= 50:
+        return 'gold'
+    return 'maroon'
+
 
 class DashboardView(ApprovedUserRequiredMixin, TemplateView):
     template_name = 'dashboard/index.html'
@@ -50,7 +66,7 @@ class DashboardView(ApprovedUserRequiredMixin, TemplateView):
                 area_readiness.append({
                     'code': area.code,
                     'value': value,
-                    'tone': 'green' if value >= 80 else 'gold' if value >= 50 else 'maroon',
+                    'tone': _readiness_tone(value),
                 })
                 gap = (100 - value, area)
                 if highest_gap is None or gap[0] > highest_gap[0]:
@@ -162,7 +178,7 @@ class DashboardView(ApprovedUserRequiredMixin, TemplateView):
                 'NON_COMPLIED': 'marked non-complied',
             }
             recent_activity.append({
-                'tone': 'green' if event.action in {'APPROVED', 'COMPLIED', 'CLOSED'} else 'maroon' if event.action in {'REQUEST_REVISION', 'NON_COMPLIED'} else 'blue',
+                'tone': ACTIVITY_TONES.get(event.action, 'blue'),
                 'actor': actor or event.actor.username,
                 'action': action_labels.get(event.action, event.action.replace('_', ' ').lower()),
                 'target': event.submission.requirement.code if event.submission else event.object_type,

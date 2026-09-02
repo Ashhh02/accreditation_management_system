@@ -16,7 +16,8 @@
       <aside class="conversation-panel">
         <div class="conversation-search">
           {% icon 'search' %}
-          <input type="search" placeholder="Search conversations...">
+          <label class="sr-only" for="conversation-search-input">Search conversations</label>
+          <input id="conversation-search-input" type="search" placeholder="Search conversations...">
         </div>
 
         <div class="conversation-list">
@@ -79,7 +80,8 @@
         </section>
 
         <footer class="message-composer">
-          <input type="text" placeholder="Type a message...">
+          <label class="sr-only" for="message-composer-input">Type a message</label>
+          <input id="message-composer-input" type="text" placeholder="Type a message...">
           <button type="button" aria-label="Send message">{% icon 'chevron-right' %}</button>
         </footer>
       </main>

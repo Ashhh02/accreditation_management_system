@@ -11,12 +11,14 @@ from django.db import transaction
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse, reverse_lazy
 from django.utils import timezone
+from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.generic import TemplateView
+from urllib.parse import quote
 
 from core.access import approved_assignments, can_approve_accounts, is_admin_user
 from core.audit import record_audit
 from core.mixins import AccountApprovalMixin, ApprovedUserRequiredMixin
-from core.models import AuditLog, Notification, RoleAssignment, UserProfile
+from core.models import AuditLog, RoleAssignment, UserProfile
 from core.notifications import create_notification
 from core.ratelimit import hit_rate_limit
 
@@ -27,6 +29,23 @@ from .forms import (
     RoleAssignmentForm,
     RoleSelectionForm,
 )
+
+
+DASHBOARD_INDEX = 'dashboard:index'
+
+
+def _safe_next_url(request):
+    """Return a validated `next` URL from the request, or None.
+
+    Only host-relative targets (e.g. ``/dashboard/``) or fully qualified URLs
+    pointing back at this host are accepted, preventing open redirects.
+    """
+    next_url = request.POST.get('next') or request.GET.get('next') or ''
+    if next_url and url_has_allowed_host_and_scheme(
+        next_url, allowed_hosts={request.get_host()}, require_https=request.is_secure()
+    ):
+        return next_url
+    return None
 
 
 DEMO_LOGIN_OPTIONS = (
@@ -68,7 +87,7 @@ class PortalLoginView(LoginView):
         return context
 
     def get_success_url(self):
-        return self.get_redirect_url() or reverse('dashboard:index')
+        return self.get_redirect_url() or reverse(DASHBOARD_INDEX)
 
     def form_valid(self, form):
         response = super().form_valid(form)
@@ -79,7 +98,7 @@ class PortalLoginView(LoginView):
             self.request.session.set_expiry(0)
         profile = getattr(self.request.user, 'profile', None)
         if profile and not profile.active_assignment_id and approved_assignments(self.request.user).count() > 1:
-            return redirect(f'{reverse("accounts:select_role")}?next={self.get_success_url()}')
+            return redirect(f'{reverse("accounts:select_role")}?next={quote(self.get_success_url())}')
         return response
 
     def form_invalid(self, form):
@@ -132,7 +151,7 @@ class SelectRoleView(LoginRequiredMixin, TemplateView):
         return render(request, self.template_name, {
             'form': form,
             'assignments': form.fields['assignment'].queryset,
-            'next_url': request.GET.get('next', ''),
+            'next_url': _safe_next_url(request) or DASHBOARD_INDEX,
         })
 
     def post(self, request, *args, **kwargs):
@@ -149,11 +168,11 @@ class SelectRoleView(LoginRequiredMixin, TemplateView):
                 object_id=str(assignment.pk),
                 details={'role': assignment.role.code, 'department': assignment.department.code},
             )
-            return redirect(request.POST.get('next') or 'dashboard:index')
+            return redirect(_safe_next_url(request) or DASHBOARD_INDEX)
         return render(request, self.template_name, {
             'form': form,
             'assignments': form.fields['assignment'].queryset,
-            'next_url': request.POST.get('next', ''),
+            'next_url': _safe_next_url(request) or DASHBOARD_INDEX,
         })
 
 
@@ -161,7 +180,7 @@ class ChangePasswordView(LoginRequiredMixin, PasswordChangeView):
     login_url = reverse_lazy('login')
     template_name = 'accounts/change_password.html'
     form_class = PasswordChangeForm
-    success_url = reverse_lazy('dashboard:index')
+    success_url = reverse_lazy(DASHBOARD_INDEX)
 
     def form_valid(self, form):
         response = super().form_valid(form)
@@ -219,7 +238,7 @@ class UserManagementView(AccountApprovalMixin, TemplateView):
                         message='Your JMCFI AMS account is approved. You can now sign in and select your active role.',
                         entity_type='User',
                         entity_id=str(user.pk),
-                        target_url=reverse('dashboard:index'),
+                        target_url=reverse(DASHBOARD_INDEX),
                     )
                     AuditLog.objects.create(
                         actor=request.user,

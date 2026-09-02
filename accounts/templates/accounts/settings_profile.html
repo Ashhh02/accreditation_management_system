@@ -20,7 +20,7 @@
             class="settings-tab{% if tab.active %} is-active{% endif %}"
             data-settings-tab="{{ tab.key }}"
             aria-controls="settings-panel-{{ tab.key }}"
-            aria-selected="{% if tab.active %}true{% else %}false{% endif %}"
+            aria-pressed="{% if tab.active %}true{% else %}false{% endif %}"
           >
             {% icon tab.icon %}
             <span>{{ tab.label }}</span>
@@ -46,25 +46,25 @@
           </div>
 
           <div class="field-grid">
-            <label>
+            <label for="{{ form.first_name.id_for_label }}">
               <span>First Name</span>
               {{ form.first_name }}
               {% for error in form.first_name.errors %}<em class="settings-field-error">{{ error }}</em>{% endfor %}
             </label>
 
-            <label>
+            <label for="{{ form.last_name.id_for_label }}">
               <span>Last Name</span>
               {{ form.last_name }}
               {% for error in form.last_name.errors %}<em class="settings-field-error">{{ error }}</em>{% endfor %}
             </label>
           </div>
 
-          <label class="full-field">
+          <label class="full-field" for="profile-department">
             <span>Department / College</span>
-            <input type="text" value="{{ profile.office }}" disabled>
+            <input id="profile-department" type="text" value="{{ profile.office }}" disabled>
           </label>
 
-          <label class="full-field">
+          <label class="full-field" for="{{ form.email.id_for_label }}">
             <span>Email Address</span>
             {{ form.email }}
             {% for error in form.email.errors %}<em class="settings-field-error">{{ error }}</em>{% endfor %}

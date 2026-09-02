@@ -1,6 +1,8 @@
 from django.db import models
 
 
+USER_MODEL = 'auth.User'
+
 ROLE_CODES = (
     'SUPERADMIN',
     'ADMIN',
@@ -66,7 +68,7 @@ class UserProfile(models.Model):
         (REJECTED, 'Rejected'),
     )
 
-    user = models.OneToOneField('auth.User', on_delete=models.CASCADE, related_name='profile')
+    user = models.OneToOneField(USER_MODEL, on_delete=models.CASCADE, related_name='profile')
     department = models.ForeignKey(
         Department,
         null=True,
@@ -83,7 +85,7 @@ class UserProfile(models.Model):
     )
     approval_status = models.CharField(max_length=20, choices=APPROVAL_CHOICES, default=PENDING)
     approved_by = models.ForeignKey(
-        'auth.User',
+        USER_MODEL,
         null=True,
         blank=True,
         on_delete=models.SET_NULL,
@@ -105,7 +107,7 @@ class UserProfile(models.Model):
 
 
 class RoleAssignment(models.Model):
-    user = models.ForeignKey('auth.User', on_delete=models.CASCADE, related_name='role_assignments')
+    user = models.ForeignKey(USER_MODEL, on_delete=models.CASCADE, related_name='role_assignments')
     role = models.ForeignKey(Role, on_delete=models.PROTECT, related_name='assignments')
     department = models.ForeignKey(Department, on_delete=models.PROTECT, related_name='role_assignments')
     assigned_areas = models.ManyToManyField(
@@ -115,7 +117,7 @@ class RoleAssignment(models.Model):
     )
     is_approved = models.BooleanField(default=False)
     approved_by = models.ForeignKey(
-        'auth.User',
+        USER_MODEL,
         null=True,
         blank=True,
         on_delete=models.SET_NULL,
@@ -138,7 +140,7 @@ class RoleAssignment(models.Model):
 
 
 class Notification(models.Model):
-    user = models.ForeignKey('auth.User', on_delete=models.CASCADE, related_name='notifications')
+    user = models.ForeignKey(USER_MODEL, on_delete=models.CASCADE, related_name='notifications')
     submission = models.ForeignKey(
         'accreditation.EvidenceSubmission',
         null=True,
@@ -161,7 +163,7 @@ class Notification(models.Model):
 
 class AuditLog(models.Model):
     actor = models.ForeignKey(
-        'auth.User',
+        USER_MODEL,
         null=True,
         blank=True,
         on_delete=models.SET_NULL,
@@ -187,7 +189,7 @@ class AuditLog(models.Model):
 class Announcement(models.Model):
     title = models.CharField(max_length=180)
     body = models.TextField()
-    created_by = models.ForeignKey('auth.User', null=True, blank=True, on_delete=models.SET_NULL, related_name='announcements')
+    created_by = models.ForeignKey(USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name='announcements')
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

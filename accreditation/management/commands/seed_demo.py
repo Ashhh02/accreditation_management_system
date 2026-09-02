@@ -24,6 +24,8 @@ from accreditation.seed_data import AREA_SUBAREAS
 from core.models import AuditLog, Department, Role, RoleAssignment, UserProfile
 
 
+SEED_REMARK = 'Seeded development demo evidence.'
+
 ROLE_DEFINITIONS = [
     ('SUPERADMIN', 'Superadmin'),
     ('ADMIN', 'Admin'),
@@ -426,7 +428,7 @@ class Command(BaseCommand):
                 self_evaluation=submission.self_evaluation,
                 actual_situation=submission.actual_situation,
                 submitted_by=program_head,
-                notes='Seeded development demo evidence.',
+                notes=SEED_REMARK,
                 status=version_status,
                 is_current=True,
             )
@@ -448,7 +450,6 @@ class Command(BaseCommand):
                 index=index,
                 submitted_at=submitted_at,
                 reviewer_by_stage=reviewer_by_stage,
-                roles=roles,
                 program_head=program_head,
             )
 
@@ -461,7 +462,7 @@ class Command(BaseCommand):
                 EvidenceSubmission.UNDER_AREA_CHAIR_REVIEW,
             ),
         ).filter(
-            Q(versions__notes='Seeded development demo evidence.')
+            Q(versions__notes=SEED_REMARK)
             | Q(current_reviewer=users['dean'])
         ).select_related('department').distinct()
         for submission in demo_submissions:
@@ -502,7 +503,6 @@ class Command(BaseCommand):
         index,
         submitted_at,
         reviewer_by_stage,
-        roles,
         program_head,
     ):
         if status == EvidenceSubmission.DRAFT:

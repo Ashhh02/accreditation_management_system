@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 
 from pathlib import Path
 import os
+import secrets
 
 from dotenv import load_dotenv
 
@@ -24,19 +25,22 @@ load_dotenv(BASE_DIR / '.env')
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'django-insecure-%20ig3=nm%)7nf8(i(&gs6!=!01$_64e@2q8zi7-$&c046-@$j')
-
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv('DEBUG', 'True').lower() in {'1', 'true', 'yes', 'on'}
 
-# A committed development fallback for SECRET_KEY is only safe while DEBUG.
-# Refuse to boot in production without a real secret.
-if not DEBUG and not os.getenv('DJANGO_SECRET_KEY'):
-    from django.core.exceptions import ImproperlyConfigured
-    raise ImproperlyConfigured(
-        'DJANGO_SECRET_KEY must be set to a strong secret value when DEBUG is disabled.'
-    )
+# SECURITY WARNING: keep the secret key used in production secret!
+# The key MUST come from the environment (DJANGO_SECRET_KEY) or a local .env
+# file. No fallback secret is committed to the repository, and the process
+# refuses to start in production without one so a leaked value can never be
+# silently reused. In development only, a random per-process key is generated.
+SECRET_KEY = os.getenv('DJANGO_SECRET_KEY')
+if not SECRET_KEY:
+    if not DEBUG:
+        from django.core.exceptions import ImproperlyConfigured
+        raise ImproperlyConfigured(
+            'DJANGO_SECRET_KEY must be set to a strong secret value when DEBUG is disabled.'
+        )
+    SECRET_KEY = secrets.token_urlsafe(64)
 
 # Demo accounts and the default development password are accepted only when
 # the project is running in demo mode. Production deployments should set

@@ -1,6 +1,10 @@
 from django.db import models
 
 
+USER_MODEL = 'auth.User'
+ROLE_MODEL = 'core.Role'
+
+
 class AccreditationCycle(models.Model):
     DRAFT = 'DRAFT'
     ACTIVE = 'ACTIVE'
@@ -130,31 +134,31 @@ class EvidenceSubmission(models.Model):
         related_name='evidence_submissions',
     )
     program_head = models.ForeignKey(
-        'auth.User',
+        USER_MODEL,
         on_delete=models.PROTECT,
         related_name='owned_evidence_submissions',
     )
     created_by = models.ForeignKey(
-        'auth.User',
+        USER_MODEL,
         on_delete=models.PROTECT,
         related_name='created_evidence_submissions',
     )
     last_updated_by = models.ForeignKey(
-        'auth.User',
+        USER_MODEL,
         null=True,
         blank=True,
         on_delete=models.SET_NULL,
         related_name='updated_evidence_submissions',
     )
     current_reviewer = models.ForeignKey(
-        'auth.User',
+        USER_MODEL,
         null=True,
         blank=True,
         on_delete=models.SET_NULL,
         related_name='assigned_evidence_reviews',
     )
     current_review_role = models.ForeignKey(
-        'core.Role',
+        ROLE_MODEL,
         null=True,
         blank=True,
         on_delete=models.PROTECT,
@@ -165,14 +169,14 @@ class EvidenceSubmission(models.Model):
     actual_situation = models.TextField(blank=True)
     revision_return_status = models.CharField(max_length=35, choices=STATUS_CHOICES, blank=True)
     revision_return_reviewer = models.ForeignKey(
-        'auth.User',
+        USER_MODEL,
         null=True,
         blank=True,
         on_delete=models.SET_NULL,
         related_name='revision_return_submissions',
     )
     revision_return_role = models.ForeignKey(
-        'core.Role',
+        ROLE_MODEL,
         null=True,
         blank=True,
         on_delete=models.PROTECT,
@@ -222,7 +226,7 @@ class EvidenceVersion(models.Model):
     version_number = models.PositiveIntegerField()
     self_evaluation = models.TextField(blank=True)
     actual_situation = models.TextField(blank=True)
-    submitted_by = models.ForeignKey('auth.User', on_delete=models.PROTECT, related_name='evidence_versions')
+    submitted_by = models.ForeignKey(USER_MODEL, on_delete=models.PROTECT, related_name='evidence_versions')
     notes = models.TextField(blank=True)
     change_remarks = models.TextField(blank=True)
     status = models.CharField(max_length=25, choices=STATUS_CHOICES, default=DRAFT)
@@ -241,7 +245,7 @@ class EvidenceVersion(models.Model):
 
 class EvidenceFile(models.Model):
     version = models.ForeignKey(EvidenceVersion, on_delete=models.CASCADE, related_name='files')
-    uploaded_by = models.ForeignKey('auth.User', on_delete=models.PROTECT, related_name='evidence_files')
+    uploaded_by = models.ForeignKey(USER_MODEL, on_delete=models.PROTECT, related_name='evidence_files')
     file = models.FileField(upload_to='evidence/%Y/%m/%d/', blank=True)
     link_url = models.URLField(blank=True)
     original_name = models.CharField(max_length=255, blank=True)
@@ -269,8 +273,8 @@ class EvidenceReview(models.Model):
 
     submission = models.ForeignKey(EvidenceSubmission, on_delete=models.CASCADE, related_name='reviews')
     version = models.ForeignKey(EvidenceVersion, null=True, blank=True, on_delete=models.SET_NULL, related_name='reviews')
-    reviewer = models.ForeignKey('auth.User', on_delete=models.PROTECT, related_name='evidence_reviews')
-    reviewer_role = models.ForeignKey('core.Role', on_delete=models.PROTECT, related_name='evidence_reviews')
+    reviewer = models.ForeignKey(USER_MODEL, on_delete=models.PROTECT, related_name='evidence_reviews')
+    reviewer_role = models.ForeignKey(ROLE_MODEL, on_delete=models.PROTECT, related_name='evidence_reviews')
     from_status = models.CharField(max_length=35, choices=EvidenceSubmission.STATUS_CHOICES)
     to_status = models.CharField(max_length=35, choices=EvidenceSubmission.STATUS_CHOICES)
     decision = models.CharField(max_length=30, choices=DECISION_CHOICES)
@@ -284,7 +288,7 @@ class EvidenceReview(models.Model):
 class EvidenceComment(models.Model):
     submission = models.ForeignKey(EvidenceSubmission, on_delete=models.CASCADE, related_name='comments')
     version = models.ForeignKey(EvidenceVersion, null=True, blank=True, on_delete=models.SET_NULL, related_name='comments')
-    author = models.ForeignKey('auth.User', on_delete=models.PROTECT, related_name='evidence_comments')
+    author = models.ForeignKey(USER_MODEL, on_delete=models.PROTECT, related_name='evidence_comments')
     body = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
 

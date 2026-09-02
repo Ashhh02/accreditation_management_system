@@ -20,6 +20,7 @@
         aria-controls="notification-popover"
       >
         {% icon 'bell' %}
+        <span class="sr-only">Notifications</span>
         {% if notification_count %}
           <span class="dot-badge">{{ notification_count }}</span>
         {% endif %}

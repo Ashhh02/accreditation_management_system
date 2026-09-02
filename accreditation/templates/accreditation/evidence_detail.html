@@ -43,22 +43,22 @@
           {% if can_edit %}
             <form method="post" enctype="multipart/form-data" class="evidence-form">
               {% csrf_token %}
-              <label>
+              <label for="{{ form.self_evaluation.id_for_label }}">
                 <span>Self-evaluation</span>
                 {{ form.self_evaluation }}
                 {% for error in form.self_evaluation.errors %}<em>{{ error }}</em>{% endfor %}
               </label>
-              <label>
+              <label for="{{ form.actual_situation.id_for_label }}">
                 <span>Actual situation</span>
                 {{ form.actual_situation }}
                 {% for error in form.actual_situation.errors %}<em>{{ error }}</em>{% endfor %}
               </label>
-              <label>
+              <label for="{{ form.files.id_for_label }}">
                 <span>Supporting document files</span>
                 {{ form.files }}
                 {% for error in form.files.errors %}<em>{{ error }}</em>{% endfor %}
               </label>
-              <label>
+              <label for="{{ form.link_url.id_for_label }}">
                 <span>Supporting link <small>(optional)</small></span>
                 {{ form.link_url }}
                 {% for error in form.link_url.errors %}<em>{{ error }}</em>{% endfor %}

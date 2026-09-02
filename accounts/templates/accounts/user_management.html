@@ -118,7 +118,7 @@
           {% csrf_token %}
           <input type="hidden" name="action" value="assign">
           {% for field in assignment_form %}
-            <label>
+            <label for="{{ field.id_for_label }}">
               <span>{{ field.label }}</span>
               {{ field }}
               {% for error in field.errors %}<em>{{ error }}</em>{% endfor %}

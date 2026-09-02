@@ -43,10 +43,12 @@ ACTIVE_REVIEW_STATUSES = {
     EvidenceSubmission.UNDER_AREA_CHAIR_REVIEW,
     EvidenceSubmission.UNDER_QA_REVIEW,
 }
+NOT_STARTED_LABEL = 'Not Started'
+REVIEW_WORKFLOW_TITLE = 'Review Workflow'
 
 
 def status_label(status):
-    return STATUS_LABELS.get(status, 'Not Started')
+    return STATUS_LABELS.get(status, NOT_STARTED_LABEL)
 
 
 def status_tone(status):
@@ -389,7 +391,7 @@ class SubmissionWorkspaceView(ApprovedUserRequiredMixin, TemplateView):
                     'code': requirement.code,
                     'title': requirement.title,
                     'description': requirement.required_description,
-                    'status': status_label(submission.status) if submission else 'Not Started',
+                    'status': status_label(submission.status) if submission else NOT_STARTED_LABEL,
                     'tone': status_tone(submission.status) if submission else 'slate',
                     'submission_id': submission.id if submission else None,
                 })
@@ -435,12 +437,13 @@ class SubmissionWorkspaceView(ApprovedUserRequiredMixin, TemplateView):
                     })
         first_submission = submission_values[0] if submission_values else None
         status = first_submission.status if first_submission else EvidenceSubmission.DRAFT
+        assignment = active_assignment(self.request.user)
         return {
             'area_key': area.slug,
             'subarea_key': active_subarea['slug'] if active_subarea else '',
             'area_code': area.code,
             'area_name': area.name,
-            'department': first_submission.department.name if first_submission else (active_assignment(self.request.user).department.name if active_assignment(self.request.user) else 'No active department'),
+            'department': first_submission.department.name if first_submission else (assignment.department.name if assignment else 'No active department'),
             'program_head': first_submission.program_head.get_full_name() if first_submission else (self.request.user.get_full_name() or self.request.user.username),
             'active_subarea': f"{active_subarea['code']} — {active_subarea['title']}" if active_subarea else area.name,
             'subarea_code': active_subarea['code'] if active_subarea else '',
@@ -454,7 +457,7 @@ class SubmissionWorkspaceView(ApprovedUserRequiredMixin, TemplateView):
             'sub_areas': sub_areas,
             'documents': latest_documents,
             'remarks': remarks,
-            'missing_requirements': [item['title'] for item in evidence_items if item['status'] in {'Draft', 'Needs Revision', 'Not Started'}],
+            'missing_requirements': [item['title'] for item in evidence_items if item['status'] in {'Draft', 'Needs Revision', NOT_STARTED_LABEL}],
             'can_submit': any(item['status'] == status_label(EvidenceSubmission.DRAFT) for item in evidence_items),
             'can_resubmit': any(item['status'] == status_label(EvidenceSubmission.NEEDS_REVISION) for item in evidence_items),
         }
@@ -623,7 +626,7 @@ class EvidenceReviewView(ApprovedUserRequiredMixin, View):
         submission = self.get_submission(request, submission_id)
         can_mark_non_complied = has_role(request.user, 'QA', 'ACCREDITATION_HEAD')
         return render(request, self.template_name, {
-            'page_title': 'Review Workflow',
+            'page_title': REVIEW_WORKFLOW_TITLE,
             'submission': submission,
             'requirement': submission.requirement,
             'latest_version': submission.current_version or submission.latest_version,
@@ -656,7 +659,7 @@ class EvidenceReviewView(ApprovedUserRequiredMixin, View):
             except (PermissionDenied, WorkflowError) as error:
                 form.add_error(None, str(error))
         return render(request, self.template_name, {
-            'page_title': 'Review Workflow',
+            'page_title': REVIEW_WORKFLOW_TITLE,
             'submission': submission,
             'requirement': submission.requirement,
             'latest_version': submission.current_version or submission.latest_version,
@@ -696,7 +699,7 @@ class ReviewWorkflowView(ApprovedUserRequiredMixin, TemplateView):
                 'review_url': f'/accreditation/review/{submission.id}/',
             })
         context.update({
-            'page_title': 'Review Workflow',
+            'page_title': REVIEW_WORKFLOW_TITLE,
             'review_stats': [
                 {'label': 'Pending Review', 'value': submissions.filter(status__in=ACTIVE_REVIEW_STATUSES).count(), 'tone': 'gold'},
                 {'label': 'Needs Revision', 'value': _scoped_submissions(self.request.user).filter(status=EvidenceSubmission.NEEDS_REVISION).count(), 'tone': 'rose'},

@@ -122,8 +122,8 @@ class RegistrationForm(forms.Form):
 
     @transaction.atomic
     def save(self):
-        User = get_user_model()
-        user = User.objects.create_user(
+        user_model = get_user_model()
+        user = user_model.objects.create_user(
             username=self.cleaned_data['username'],
             email=self.cleaned_data['email'],
             first_name=self.cleaned_data['first_name'],

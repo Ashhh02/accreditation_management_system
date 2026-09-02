@@ -152,6 +152,17 @@
 
 .save-settings-btn {
   text-decoration: none;
+  min-height: 41px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 20px;
+  padding: 0 20px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: var(--maroon-700);
+  color: #fff;
+  font-weight: 800;
 }
 
 .profile-hero button {
@@ -326,20 +337,6 @@
 
 .settings-option input:checked::before {
   transform: translateX(18px);
-}
-
-.save-settings-btn {
-  min-height: 41px;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 20px;
-  padding: 0 20px;
-  border: 0;
-  border-radius: var(--radius-sm);
-  background: var(--maroon-700);
-  color: #fff;
-  font-weight: 800;
 }
 
 .save-settings-btn .icon {
