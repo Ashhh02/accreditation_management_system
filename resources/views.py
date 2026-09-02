@@ -1,9 +1,35 @@
+from django.contrib.auth import get_user_model
+from django.http import JsonResponse
+from django.shortcuts import get_object_or_404
+from django.urls import reverse
+from django.utils import timezone
+from django.views import View
 from django.views.generic import TemplateView
 
 from accreditation.db_views import status_label, status_tone
 from accreditation.models import EvidenceFile, EvidenceSubmission
 from core.access import accessible_repository_submissions
 from core.mixins import ApprovedUserRequiredMixin
+
+from .models import Conversation
+from .services import RateLimitedError, mark_read, message_serialize, post_message, unread_count
+
+
+def _display_name(user):
+    return user.get_full_name().strip() or user.username
+
+
+def _initials(user):
+    name = user.get_full_name().strip() or user.username
+    parts = name.split()
+    return ''.join(part[0] for part in parts[:2]).upper() or 'U'
+
+
+def _time_label(moment):
+    local = timezone.localtime(moment)
+    if local.date() == timezone.localdate():
+        return local.strftime('%I:%M %p').lstrip('0')
+    return local.strftime('%b %d, %I:%M %p').replace(' 0', ' ')
 
 
 class DocumentRepositoryView(ApprovedUserRequiredMixin, TemplateView):
@@ -14,6 +40,7 @@ class DocumentRepositoryView(ApprovedUserRequiredMixin, TemplateView):
         submissions = accessible_repository_submissions(self.request.user)
         evidence_files = EvidenceFile.objects.filter(
             version__submission__in=submissions,
+            version__is_current=True,
         ).select_related(
             'version__submission__requirement__area__level',
             'version__submission__requirement__subarea',
@@ -28,13 +55,14 @@ class DocumentRepositoryView(ApprovedUserRequiredMixin, TemplateView):
             documents.append({
                 'name': name,
                 'department': submission.department.name,
-                'details': f'{requirement.area.code} · {requirement.area.level.name} · {submission.program_head.get_full_name() or submission.program_head.username}',
+                'details': f'{requirement.area.code} · {requirement.area.level.name} · {_display_name(submission.program_head)}',
                 'tags': [requirement.area.name, requirement.subarea.code if requirement.subarea else 'Evidence'],
                 'version': f'v{evidence_file.version.version_number}',
                 'updated': f'Updated {evidence_file.created_at:%b %d, %Y}',
                 'status': status_label(submission.status),
                 'tone': status_tone(submission.status),
                 'icon_tone': 'rose',
+                'download_url': reverse('accreditation:evidence_file_download', args=[evidence_file.pk]),
             })
         total = len(documents)
         completed = submissions.filter(status__in={EvidenceSubmission.COMPLIED, EvidenceSubmission.CLOSED}).count()
@@ -53,93 +81,129 @@ class DocumentRepositoryView(ApprovedUserRequiredMixin, TemplateView):
         return context
 
 
+def _ensure_membership(user):
+    """Return a conversation for the user, creating/joining the shared working
+    group on first access so the chat is usable without admin setup."""
+
+    conversation = Conversation.objects.filter(members=user).first()
+    if conversation:
+        return conversation
+
+    user_model = get_user_model()
+    conversation = Conversation.objects.filter(title='Accreditation Working Group').first()
+    if conversation is None:
+        conversation = Conversation.objects.create(
+            title='Accreditation Working Group',
+            context='Internal accreditation collaboration',
+            is_group_thread=True,
+        )
+    member_ids = set(conversation.members.values_list('id', flat=True))
+    member_ids.update(
+        user_model.objects.filter(
+            is_active=True,
+            profile__approval_status='APPROVED',
+            role_assignments__is_approved=True,
+        ).values_list('id', flat=True)
+    )
+    conversation.members.set(user_model.objects.filter(id__in=list(member_ids)))
+    return conversation
+
+
 class CommunicationView(ApprovedUserRequiredMixin, TemplateView):
     template_name = 'resources/communication.html'
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        conversations = [
-            {
-                'initials': 'AV',
-                'name': 'Dr. A. Villanueva',
-                'context': 'QA Office',
-                'preview': 'Please resubmit Area II with updated credentials...',
-                'time': '10:22 AM',
-                'unread': 2,
-                'active': True,
-                'online': True,
-                'pinned': True,
+        user = self.request.user
+        conversation_id = self.request.GET.get('conversation')
+        if conversation_id:
+            active = get_object_or_404(Conversation, pk=conversation_id, members=user)
+        else:
+            active = _ensure_membership(user)
+
+        conversations = []
+        member_ids = list(active.members.values_list('id', flat=True))
+        for conversation in Conversation.objects.filter(members=user):
+            last = conversation.messages.select_related('author').order_by('-created_at').first()
+            conversations.append({
+                'id': conversation.id,
+                'initials': _initials(conversation.members.exclude(pk=user.pk).first() or user),
+                'name': conversation.title,
+                'context': conversation.context,
+                'preview': last.body[:90] if last else 'No messages yet',
+                'time': _time_label(last.created_at) if last else '—',
+                'unread': unread_count(user, conversation),
+                'active': conversation.pk == active.pk,
+                'pinned': conversation.is_group_thread,
+            })
+
+        message_rows = [message_serialize(message, viewer=user) for message in active.messages.select_related('author')[:50]]
+
+        context.update({
+            'page_title': 'Communication',
+            'conversations': conversations,
+            'messages': message_rows,
+            'active_conversation': {
+                'id': active.pk,
+                'name': active.title,
+                'context': active.context,
+                'linked': f'Linked: {active.related_submission.requirement.code} Submission' if active.related_submission_id else '',
+                'member_ids': member_ids,
             },
-            {
-                'initials': 'JR',
-                'name': 'Prof. J. Reyes',
-                'context': 'College of Engineering',
-                'preview': 'I have uploaded the revised syllabi for review.',
-                'time': '9:45 AM',
-                'unread': 0,
-                'active': False,
-                'online': True,
-                'pinned': False,
-            },
-            {
-                'initials': 'A3',
-                'name': 'Area III Review Team',
-                'context': 'Group · 5 members',
-                'preview': 'Dr. Cruz: The assessment framework looks complete.',
-                'time': 'Yesterday',
-                'unread': 5,
-                'active': False,
-                'online': False,
-                'pinned': False,
-            },
-            {
-                'initials': 'EC',
-                'name': 'Dr. E. Cruz',
-                'context': 'College of Business (Dean)',
-                'preview': "Approved the Dean's review for Area V.",
-                'time': 'Yesterday',
-                'unread': 0,
-                'active': False,
-                'online': False,
-                'pinned': False,
-            },
-        ]
-        messages = [
-            {
-                'author': 'Dr. A. Villanueva',
-                'initials': 'AV',
-                'text': 'Good morning, Prof. Reyes. I reviewed your Area II submission and found that the faculty credentials need to be updated for AY 2025-2026.',
-                'time': '9:30 AM',
-                'mine': False,
-            },
-            {
-                'author': 'You',
-                'initials': 'MS',
-                'text': 'Good morning, Dr. Villanueva. Thank you for the feedback. I will gather the updated credentials from all faculty members.',
-                'time': '9:35 AM',
-                'mine': True,
-            },
-            {
-                'author': 'Dr. A. Villanueva',
-                'initials': 'AV',
-                'text': 'Please prioritize the full-time faculty. Also ensure that Special Professional Licenses are included. The deadline is July 25.',
-                'time': '9:42 AM',
-                'mine': False,
-            },
-            {
-                'author': 'You',
-                'initials': 'MS',
-                'text': 'Understood. I will compile everything and submit by July 20 to give enough buffer for review.',
-                'time': '9:48 AM',
-                'mine': True,
-            },
-        ]
-        context.update(
-            {
-                'page_title': 'Communication',
-                'conversations': conversations,
-                'messages': messages,
-                'active_conversation': conversations[0],
-            }
-        )
+            'messages_api_url': '/communication/messages/',
+            'read_api_url': '/communication/read/',
+            'ws_path': '/ws/communication/',
+        })
         return context
+
+
+class MessagesApiView(ApprovedUserRequiredMixin, View):
+    """GET/POST JSON feed used by the chat UI (HTTP fallback to WebSockets)."""
+
+    def get(self, request, *args, **kwargs):
+        conversation = get_object_or_404(
+            Conversation,
+            pk=request.GET.get('conversation'),
+            members=request.user,
+        )
+        items = [message_serialize(message, viewer=request.user) for message in conversation.messages.select_related('author').order_by('-created_at')[:50]]
+        return JsonResponse({
+            'conversation': conversation.pk,
+            'messages': list(reversed(items)),
+            'unread': unread_count(request.user, conversation),
+        })
+
+    def post(self, request, *args, **kwargs):
+        conversation = get_object_or_404(
+            Conversation,
+            pk=request.POST.get('conversation'),
+            members=request.user,
+        )
+        body = (request.POST.get('body') or '').strip()
+        if not body:
+            return JsonResponse({'error': 'Message cannot be empty.'}, status=400)
+        try:
+            message = post_message(
+                conversation,
+                author=request.user,
+                body=body,
+                client_message_id=(request.POST.get('client_message_id') or '').strip(),
+            )
+        except RateLimitedError:
+            return JsonResponse({'error': 'You are sending messages too quickly.'}, status=429)
+        except ValueError as exc:
+            return JsonResponse({'error': str(exc)}, status=400)
+        return JsonResponse(message_serialize(message, viewer=request.user))
+
+
+class MarkConversationReadView(ApprovedUserRequiredMixin, View):
+    """Mark a conversation as read and broadcast that to its members."""
+
+    def post(self, request, *args, **kwargs):
+        conversation = get_object_or_404(
+            Conversation,
+            pk=request.POST.get('conversation'),
+            members=request.user,
+        )
+        mark_read(request.user, conversation)
+        return JsonResponse({'ok': True, 'conversation': conversation.pk})

@@ -69,7 +69,9 @@
 
               <div class="repo-actions">
                 {% icon 'search' %}
-                {% icon 'cloud' %}
+                <a href="{{ document.download_url }}" class="repo-download-btn" aria-label="Download {{ document.name }}">
+                  {% icon 'cloud' %}
+                </a>
               </div>
             </article>
           {% endfor %}

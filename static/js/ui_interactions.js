@@ -191,42 +191,53 @@
     });
   }
 
-  function addChatMessage(input, listSelector, mineClass) {
-    const text = input.value.trim();
-    if (!text) {
-      showToast('Type a message first');
-      return;
-    }
-
-    const list = document.querySelector(listSelector);
-    if (!list) return;
-
-    const article = document.createElement('article');
-    article.className = mineClass;
-    article.innerHTML =
-      '<div class="message-bubble"></div><time>Now</time>';
-    article.querySelector('.message-bubble').textContent = text;
-    list.appendChild(article);
-    input.value = '';
-    list.scrollTop = list.scrollHeight;
-    showToast('Message sent');
+  function getCookie(name) {
+    const value = '; ' + String(document.cookie);
+    const parts = value.split('; ' + name + '=');
+    if (parts.length === 2) return parts.pop().split(';').shift();
+    return '';
   }
 
-  function companionAnswer(question) {
-    const lower = normalize(question);
-    if (lower.includes('missing') || lower.includes('documents')) {
-      return 'Area II needs updated faculty credentials, current syllabi, and supporting portfolio samples. Prioritize documents tied to pending or revision items first.';
+  function requestJSON(url, options) {
+    options = options || {};
+    const headers = options.headers || {};
+    if (options.body instanceof FormData) {
+      headers['X-CSRFToken'] = getCookie('csrftoken');
     }
-    if (lower.includes('deadline') || lower.includes('july 25')) {
-      return 'Before July 25, finish Level I preliminary evidence, resolve Area II revisions, and confirm overdue Student Services submissions.';
-    }
-    if (lower.includes('critical') || lower.includes('risk') || lower.includes('area viii')) {
-      return 'The highest-risk areas are Area VII and Area VIII. Area VIII needs early follow-up because readiness is still below target and the deadline window is narrowing.';
-    }
-    if (lower.includes('compliance') || lower.includes('department')) {
-      return 'Engineering and Arts & Sciences need the closest monitoring. Check pending evidence counts, reviewer remarks, and zero-submission areas first.';
-    }
-    return 'Start with the items marked pending or needs revision, then assign each item to an owner with a target upload date. I can also summarize this into a checklist.';
+    return fetch(url, Object.assign({ credentials: 'same-origin' }, options, { headers: headers }))
+      .then(function (response) {
+        if (!response.ok) {
+          return response.json()
+            .catch(function () { return {}; })
+            .then(function (payload) {
+              const error = new Error(payload.error || 'Request failed');
+              error.status = response.status;
+              throw error;
+            });
+        }
+        return response.json();
+      });
+  }
+
+  function buildCompanionMessage(question) {
+    const article = document.createElement('article');
+    article.className = 'companion-user-message';
+    const bubble = document.createElement('div');
+    bubble.className = 'assistant-bubble';
+    bubble.textContent = question;
+    article.appendChild(bubble);
+    return article;
+  }
+
+  function buildCompanionReply(text) {
+    const article = document.createElement('article');
+    article.className = 'companion-message companion-reply is-pending';
+    article.innerHTML =
+      '<div class="companion-bot-icon">' +
+      '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v3M12 18v3M3 12h3M18 12h3M6 6l2 2M16 16l2 2M6 18l2-2M16 8l2-2"/><circle cx="12" cy="12" r="3"/></svg>' +
+      '</div><div class="message-stack"><div class="assistant-bubble"></div></div>';
+    article.querySelector('.assistant-bubble').textContent = text;
+    return article;
   }
 
   function submitCompanionQuestion(input) {
@@ -236,34 +247,314 @@
       return;
     }
 
-    const body = document.querySelector('.companion-body');
-    if (!body) return;
+    const page = document.querySelector('[data-ask-url]');
+    const replies = document.querySelector('.companion-replies');
+    if (!page || !replies) return;
 
-    const userMessage = document.createElement('article');
-    userMessage.className = 'companion-user-message';
-    userMessage.innerHTML = '<div class="assistant-bubble"></div>';
-    userMessage.querySelector('.assistant-bubble').textContent = question;
-
-    const reply = document.createElement('article');
-    reply.className = 'companion-message companion-reply';
-    reply.innerHTML =
-      '<div class="companion-bot-icon">' +
-      '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v3M12 18v3M3 12h3M18 12h3M6 6l2 2M16 16l2 2M6 18l2-2M16 8l2-2"/><circle cx="12" cy="12" r="3"/></svg>' +
-      '</div><div class="message-stack"><div class="assistant-bubble"></div><time>Companion · Now</time></div>';
-    reply.querySelector('.assistant-bubble').textContent = companionAnswer(question);
-
-    body.appendChild(userMessage);
-    body.appendChild(reply);
+    const userMessage = buildCompanionMessage(question);
+    const reply = buildCompanionReply('Thinking…');
+    replies.appendChild(userMessage);
+    replies.appendChild(reply);
     input.value = '';
-    body.scrollTop = body.scrollHeight;
-    showToast('Smart Companion answered');
+    replies.scrollTop = replies.scrollHeight;
+
+    const data = new FormData();
+    data.append('question', question);
+    requestJSON(page.dataset.askUrl, { method: 'POST', body: data })
+      .then(function (payload) {
+        const bubble = reply.querySelector('.assistant-bubble');
+        bubble.classList.remove('is-pending');
+        bubble.textContent = payload.answer || 'No answer available.';
+        if (payload.sources && payload.sources.length) {
+          const sources = document.createElement('div');
+          sources.className = 'companion-sources';
+          payload.sources.forEach(function (source) {
+            if (!source.url) return;
+            const link = document.createElement('a');
+            link.href = source.url;
+            link.textContent = source.title;
+            sources.appendChild(link);
+          });
+          reply.querySelector('.message-stack').appendChild(sources);
+        }
+        replies.scrollTop = replies.scrollHeight;
+        showToast('AVA answered');
+      })
+      .catch(function (error) {
+        const bubble = reply.querySelector('.assistant-bubble');
+        bubble.classList.remove('is-pending');
+        bubble.textContent = error.message || 'Something went wrong. Please try again.';
+        showToast('Could not get an answer');
+      });
+  }
+
+  function buildMessageRow(message) {
+    const article = document.createElement('article');
+    article.className = 'message-row' + (message.mine ? ' is-mine' : '') + (message.pending ? ' is-pending' : '');
+    if (message.id) article.dataset.messageId = message.id;
+    if (message.client_message_id) article.dataset.clientMessageId = message.client_message_id;
+    if (!message.mine) {
+      const author = document.createElement('div');
+      author.className = 'message-author';
+      author.textContent = message.author;
+      const wrap = document.createElement('div');
+      wrap.className = 'message-wrap';
+      const avatar = document.createElement('span');
+      avatar.className = 'message-avatar';
+      avatar.textContent = message.initials;
+      const inner = document.createElement('div');
+      const bubble = document.createElement('div');
+      bubble.className = 'message-bubble';
+      bubble.textContent = message.text;
+      const time = document.createElement('time');
+      time.textContent = message.time;
+      inner.appendChild(bubble);
+      inner.appendChild(time);
+      wrap.appendChild(avatar);
+      wrap.appendChild(inner);
+      article.appendChild(author);
+      article.appendChild(wrap);
+    } else {
+      const bubble = document.createElement('div');
+      bubble.className = 'message-bubble';
+      bubble.textContent = message.text;
+      const time = document.createElement('time');
+      time.textContent = message.time;
+      article.appendChild(bubble);
+      article.appendChild(time);
+    }
+    return article;
+  }
+
+  function resolveChatContext() {
+    const page = document.querySelector('[data-messages-api]');
+    if (!page) return null;
+    return {
+      api: page.dataset.messagesApi,
+      readUrl: page.dataset.readUrl || '',
+      wsPath: page.dataset.wsPath || '/ws/communication/',
+      conversation: page.dataset.activeConversation,
+    };
+  }
+
+  const chatState = {
+    socket: null,
+    connected: false,
+    reconnectTimer: null,
+    reconnectDelay: 1000,
+  };
+
+  function chatSocketUrl(path) {
+    const scheme = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
+    return scheme + window.location.host + path;
+  }
+
+  function connectChatSocket() {
+    const ctx = resolveChatContext();
+    if (!ctx) return;
+    const socket = new WebSocket(chatSocketUrl(ctx.wsPath));
+    chatState.socket = socket;
+    socket.addEventListener('open', onChatOpen);
+    socket.addEventListener('message', onChatMessage);
+    socket.addEventListener('close', onChatClose);
+    socket.addEventListener('error', onChatError);
+  }
+
+  function onChatOpen() {
+    chatState.connected = true;
+    chatState.reconnectDelay = 1000;
+    markActiveConversationRead();
+  }
+
+  function onChatClose() {
+    chatState.connected = false;
+    chatState.socket = null;
+    window.clearTimeout(chatState.reconnectTimer);
+    chatState.reconnectTimer = window.setTimeout(function () {
+      connectChatSocket();
+      chatState.reconnectDelay = Math.min(chatState.reconnectDelay * 2, 15000);
+    }, chatState.reconnectDelay);
+  }
+
+  function onChatError() {
+    chatState.connected = false;
+  }
+
+  function onChatMessage(event) {
+    let data;
+    try {
+      data = JSON.parse(event.data);
+    } catch (error) {
+      return;
+    }
+    if (data.type === 'chat') {
+      handleChatEvent(data.conversation_id, data.event, data.payload);
+    } else if (data.type === 'connected') {
+      markActiveConversationRead();
+    } else if (data.type === 'error') {
+      showToast(data.error || 'Communication error');
+    }
+  }
+
+  function messageList() {
+    return document.querySelector('.message-list');
+  }
+
+  function appendOrConfirmMessage(message) {
+    const list = messageList();
+    if (!list) return;
+    const page = document.querySelector('[data-messages-api]');
+    if (page && page.dataset.currentUser && message.author_id) {
+      message.mine = String(message.author_id) === String(page.dataset.currentUser);
+      if (message.mine) {
+        message.author = '';
+        message.initials = '';
+      }
+    }
+    if (message.id && list.querySelector('[data-message-id="' + message.id + '"]')) return;
+    if (message.client_message_id) {
+      const pending = list.querySelector('[data-client-message-id="' + message.client_message_id + '"]');
+      if (pending) {
+        pending.classList.remove('is-pending');
+        if (message.id) pending.dataset.messageId = message.id;
+        return;
+      }
+    }
+    list.appendChild(buildMessageRow(message));
+    list.scrollTop = list.scrollHeight;
+  }
+
+  function markActiveConversationRead() {
+    const ctx = resolveChatContext();
+    if (!ctx || !ctx.conversation) return;
+    const active = document.querySelector('.conversation-item.is-active .conversation-badge');
+    if (active) active.remove();
+    if (chatState.connected && chatState.socket && chatState.socket.readyState === WebSocket.OPEN) {
+      try {
+        chatState.socket.send(JSON.stringify({ type: 'read', conversation_id: Number(ctx.conversation) }));
+        return;
+      } catch (error) {
+        // fall through to the HTTP mark-read below
+      }
+    }
+    if (!ctx.readUrl) return;
+    const data = new FormData();
+    data.append('conversation', ctx.conversation);
+    requestJSON(ctx.readUrl, { method: 'POST', body: data }).catch(function () {});
+  }
+
+  function bumpConversationBadge(conversationId) {
+    const item = document.querySelector('.conversation-item[data-conversation-id="' + conversationId + '"]');
+    if (!item) return;
+    const badge = item.querySelector('.conversation-badge');
+    if (badge) {
+      badge.textContent = (parseInt(badge.textContent, 10) || 0) + 1;
+    } else {
+      const count = document.createElement('span');
+      count.className = 'conversation-badge';
+      count.textContent = '1';
+      item.appendChild(count);
+    }
+  }
+
+  function updateConversationPreview(conversationId, message) {
+    const item = document.querySelector('.conversation-item[data-conversation-id="' + conversationId + '"]');
+    if (!item) return;
+    const preview = item.querySelector('.conversation-preview');
+    const time = item.querySelector('.conversation-line em');
+    if (preview) preview.textContent = message.text.slice(0, 90);
+    if (time) time.textContent = message.time;
+  }
+
+  function handleChatEvent(conversationId, event, payload) {
+    if (event !== 'message' || !payload || !payload.message) return;
+    const ctx = resolveChatContext();
+    if (ctx && String(conversationId) === String(ctx.conversation)) {
+      appendOrConfirmMessage(payload.message);
+      if (!payload.message.mine) {
+        markActiveConversationRead();
+        updateConversationPreview(conversationId, payload.message);
+      }
+    } else {
+      bumpConversationBadge(conversationId);
+      updateConversationPreview(conversationId, payload.message);
+    }
+  }
+
+  function postMessageHttp(ctx, text, clientMessageId) {
+    const data = new FormData();
+    data.append('conversation', ctx.conversation);
+    data.append('body', text);
+    data.append('client_message_id', clientMessageId);
+    requestJSON(ctx.api, { method: 'POST', body: data })
+      .then(function (payload) {
+        const list = messageList();
+        if (list) {
+          const pending = list.querySelector('[data-client-message-id="' + clientMessageId + '"]');
+          if (pending) {
+            pending.classList.remove('is-pending');
+            if (payload.id) pending.dataset.messageId = payload.id;
+          }
+        }
+        showToast('Message sent');
+      })
+      .catch(function (error) {
+        const list = messageList();
+        if (list) {
+          const pending = list.querySelector('[data-client-message-id="' + clientMessageId + '"]');
+          if (pending) pending.remove();
+        }
+        showToast(error.message || 'Could not send message');
+      });
+  }
+
+  function sendChatMessage(input) {
+    const text = input.value.trim();
+    if (!text) {
+      showToast('Type a message first');
+      return;
+    }
+
+    const ctx = resolveChatContext();
+    const list = messageList();
+    if (!ctx || !list) {
+      showToast('Select a conversation first');
+      return;
+    }
+
+    const clientMessageId = 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+    const optimistic = {
+      client_message_id: clientMessageId,
+      text: text,
+      time: 'Sending…',
+      mine: true,
+      pending: true,
+    };
+    list.appendChild(buildMessageRow(optimistic));
+    input.value = '';
+    list.scrollTop = list.scrollHeight;
+
+    if (chatState.connected && chatState.socket && chatState.socket.readyState === WebSocket.OPEN) {
+      try {
+        chatState.socket.send(JSON.stringify({
+          type: 'send_message',
+          conversation_id: Number(ctx.conversation),
+          body: text,
+          client_message_id: clientMessageId,
+        }));
+        return;
+      } catch (error) {
+        // connection dropped mid-frame; fall back to HTTP below
+      }
+    }
+    postMessageHttp(ctx, text, clientMessageId);
   }
 
   function bindMessaging() {
     document.querySelectorAll('.message-composer button').forEach(function (button) {
       button.addEventListener('click', function () {
         const input = button.closest('.message-composer').querySelector('input');
-        addChatMessage(input, '.message-list', 'message-row is-mine');
+        sendChatMessage(input);
       });
     });
 
@@ -271,8 +562,31 @@
       input.addEventListener('keydown', function (event) {
         if (event.key === 'Enter') {
           event.preventDefault();
-          addChatMessage(input, '.message-list', 'message-row is-mine');
+          sendChatMessage(input);
         }
+      });
+    });
+
+    document.querySelectorAll('.conversation-item').forEach(function (item) {
+      item.addEventListener('click', function () {
+        const id = item.dataset.conversationId;
+        const page = document.querySelector('[data-messages-api]');
+        const list = messageList();
+        if (!id || !page || !list) return;
+
+        page.dataset.activeConversation = id;
+        document.querySelectorAll('.conversation-item').forEach(function (other) {
+          other.classList.toggle('is-active', other === item);
+        });
+        list.textContent = '';
+        requestJSON(page.dataset.messagesApi + '?conversation=' + encodeURIComponent(id))
+          .then(function (payload) {
+            renderMessages(payload.messages, list);
+            markActiveConversationRead();
+          })
+          .catch(function (error) {
+            showToast(error.message);
+          });
       });
     });
 
@@ -302,22 +616,81 @@
     });
   }
 
-  function downloadReport() {
-    const body = [
-      'JMCFI AMS Report',
-      'Academic Year 2025-2026',
-      '',
-      'Overall Readiness: 74.3%',
-      'Total Submissions: 247',
-      'Compliance Rate: 73.7%',
-      'Overdue Items: 12',
-    ].join('\n');
-    const blob = new Blob([body], { type: 'text/plain' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = 'jmcfi-ams-report.txt';
-    link.click();
-    URL.revokeObjectURL(link.href);
+  function renderMessages(messages, list) {
+    list.replaceChildren();
+    messages.forEach(function (message) {
+      list.appendChild(buildMessageRow(message));
+    });
+    list.scrollTop = list.scrollHeight;
+  }
+
+  function pollNotifications() {
+    const menuRoot = document.querySelector('[data-notification-menu]');
+    if (!menuRoot || !menuRoot.dataset.notificationFeedUrl) return;
+
+    fetch(menuRoot.dataset.notificationFeedUrl, { credentials: 'same-origin' })
+      .then(function (response) {
+        return response.json();
+      })
+      .then(function (payload) {
+        const trigger = menuRoot.querySelector('[data-notification-trigger]');
+        const head = menuRoot.querySelector('.notification-popover-head span');
+        const list = menuRoot.querySelector('.notification-popover-list');
+        let badge = trigger ? trigger.querySelector('.dot-badge') : null;
+
+        if (payload.unread > 0) {
+          if (!badge) {
+            badge = document.createElement('span');
+            badge.className = 'dot-badge';
+            if (trigger) trigger.appendChild(badge);
+          }
+          badge.textContent = payload.unread;
+        } else if (badge) {
+          badge.remove();
+        }
+
+        if (head) head.textContent = payload.unread + ' unread';
+        if (list) {
+          list.replaceChildren();
+          if (!payload.items.length) {
+            const empty = document.createElement('p');
+            empty.className = 'notification-popover-empty';
+            empty.textContent = 'No notifications yet.';
+            list.appendChild(empty);
+          } else {
+            payload.items.forEach(function (item) {
+              const link = document.createElement('a');
+              link.href = item.submission_url || '#';
+              link.className = 'notification-popover-item' + (item.unread ? ' is-unread' : '');
+              link.innerHTML =
+                '<span class="notification-popover-dot"></span>' +
+                '<span class="notification-popover-copy"><strong></strong><small></small><em></em></span>';
+              link.querySelector('strong').textContent = item.title;
+              link.querySelector('small').textContent = item.message;
+              link.querySelector('em').textContent = item.time_label;
+              list.appendChild(link);
+            });
+          }
+        }
+      })
+      .catch(function () {
+        // ignore transient failures; next poll will retry
+      });
+  }
+
+  function pollActiveConversationFallback() {
+    const ctx = resolveChatContext();
+    if (!ctx || chatState.connected) return;
+    requestJSON(ctx.api + '?conversation=' + encodeURIComponent(ctx.conversation))
+      .then(function (payload) {
+        const list = messageList();
+        if (!list) return;
+        renderMessages(payload.messages, list);
+        if (payload.unread > 0) markActiveConversationRead();
+      })
+      .catch(function () {
+        // ignore transient failures; next poll will retry
+      });
   }
 
   function applyProfilePhoto(photoUrl) {
@@ -386,13 +759,6 @@
     document.querySelectorAll('.print-btn').forEach(function (button) {
       button.addEventListener('click', function () {
         window.print();
-      });
-    });
-
-    document.querySelectorAll('.export-btn').forEach(function (button) {
-      button.addEventListener('click', function () {
-        downloadReport();
-        showToast('Report exported');
       });
     });
 
@@ -538,6 +904,10 @@
     bindNotifications();
     bindNotificationMenu();
     bindMessaging();
+    connectChatSocket();
+    window.setInterval(pollActiveConversationFallback, 20000);
+    pollNotifications();
+    window.setInterval(pollNotifications, 20000);
     bindProfilePhoto();
     bindActionButtons();
     bindWorkspaceActions();

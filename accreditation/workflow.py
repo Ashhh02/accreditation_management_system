@@ -1,9 +1,11 @@
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import transaction
+from django.urls import reverse
 from django.utils import timezone
 
 from core.access import assignment_for_reviewer, reviewer_assignments
-from core.models import AuditLog, Notification, Role
+from core.models import AuditLog, Role
+from core.notifications import create_notification
 
 from .models import EvidenceComment, EvidenceFile, EvidenceReview, EvidenceSubmission, EvidenceVersion
 
@@ -27,18 +29,27 @@ def _audit(actor, submission, action, details=None):
     )
 
 
+def _evidence_url(submission):
+    return reverse('accreditation:evidence_detail', args=[submission.pk])
+
+
 def _notify(users, submission, title, message, kind='workflow'):
-    unique_ids = {user.id for user in users if user and user.is_active}
-    Notification.objects.bulk_create([
-        Notification(
-            user_id=user_id,
-            submission=submission,
+    target_url = _evidence_url(submission)
+    seen = set()
+    for user in users:
+        if not user or not user.is_active or user.pk in seen:
+            continue
+        seen.add(user.pk)
+        create_notification(
+            user,
             kind=kind,
             title=title,
             message=message,
+            submission=submission,
+            entity_type='EvidenceSubmission',
+            entity_id=str(submission.pk),
+            target_url=target_url,
         )
-        for user_id in unique_ids
-    ])
 
 
 def _next_version_number(submission):
@@ -46,13 +57,17 @@ def _next_version_number(submission):
     return (latest.version_number + 1) if latest else 1
 
 
-def _save_version(submission, actor, self_evaluation, actual_situation, files=None, link_url=''):
+def _save_version(submission, actor, self_evaluation, actual_situation, files=None, link_url='', change_remarks=''):
+    submission.versions.filter(is_current=True).update(is_current=False, status=EvidenceVersion.SUPERSEDED)
     version = EvidenceVersion.objects.create(
         submission=submission,
         version_number=_next_version_number(submission),
         self_evaluation=self_evaluation,
         actual_situation=actual_situation,
         submitted_by=actor,
+        status=EvidenceVersion.SUBMITTED,
+        is_current=True,
+        change_remarks=change_remarks,
     )
     for uploaded_file in files or []:
         EvidenceFile.objects.create(
@@ -98,7 +113,7 @@ def save_draft(submission, actor, self_evaluation, actual_situation):
 
 
 @transaction.atomic
-def submit_submission(submission, actor, self_evaluation, actual_situation, files=None, link_url=''):
+def submit_submission(submission, actor, self_evaluation, actual_situation, files=None, link_url='', change_remarks=''):
     if submission.program_head_id != actor.id:
         raise PermissionDenied('You can only manage evidence assigned to your program.')
     if submission.status not in {EvidenceSubmission.DRAFT, EvidenceSubmission.NEEDS_REVISION}:
@@ -116,6 +131,7 @@ def submit_submission(submission, actor, self_evaluation, actual_situation, file
         actual_situation,
         files=files,
         link_url=link_url,
+        change_remarks=change_remarks,
     )
     submission.self_evaluation = self_evaluation
     submission.actual_situation = actual_situation
@@ -148,6 +164,7 @@ def submit_submission(submission, actor, self_evaluation, actual_situation, file
         submission,
         'Evidence submitted for review',
         f'{submission.requirement.code} is ready for your review.',
+        kind='submission',
     )
     return submission
 
@@ -219,14 +236,16 @@ def approve_submission(submission, actor, remarks=''):
         submission.current_reviewer = None
         submission.current_review_role = None
         submission.save(update_fields=['status', 'current_reviewer', 'current_review_role', 'last_updated', 'closed_at'])
+        submission.versions.filter(is_current=True).update(status=EvidenceVersion.APPROVED)
         _audit(actor, submission, 'CLOSED', {'from_status': EvidenceSubmission.COMPLIED, 'to_status': EvidenceSubmission.CLOSED})
 
     if next_reviewer:
         _notify(
             [next_reviewer],
             submission,
-            'Evidence ready for review',
-            f'{submission.requirement.code} passed {current_role.name} review and is ready for yours.',
+            'New review task assigned',
+            f'{submission.requirement.code} passed {current_role.name} review and is now assigned to you.',
+            kind='task',
         )
     else:
         _notify(
@@ -234,6 +253,7 @@ def approve_submission(submission, actor, remarks=''):
             submission,
             'Evidence complied and closed',
             f'{submission.requirement.code} completed the internal review workflow.',
+            kind='review',
         )
     return submission
 
@@ -270,6 +290,7 @@ def request_revision(submission, actor, remarks):
     submission.current_review_role = _role('PROGRAM_HEAD')
     submission.last_updated_by = actor
     submission.save()
+    submission.versions.filter(is_current=True).update(status=EvidenceVersion.NOT_APPROVED)
     EvidenceComment.objects.create(
         submission=submission,
         version=submission.latest_version,
@@ -282,6 +303,7 @@ def request_revision(submission, actor, remarks):
         submission,
         'Revision requested',
         f'{submission.requirement.code} needs revision before it can continue.',
+        kind='revision',
     )
     return submission
 
@@ -310,6 +332,7 @@ def mark_non_complied(submission, actor, remarks):
     submission.current_review_role = None
     submission.last_updated_by = actor
     submission.save()
+    submission.versions.filter(is_current=True).update(status=EvidenceVersion.NOT_APPROVED)
     EvidenceComment.objects.create(
         submission=submission,
         version=submission.latest_version,
@@ -322,5 +345,6 @@ def mark_non_complied(submission, actor, remarks):
         submission,
         'Evidence marked non-complied',
         f'{submission.requirement.code} was marked non-complied after internal review.',
+        kind='review',
     )
     return submission

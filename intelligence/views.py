@@ -1,21 +1,19 @@
 import math
 from datetime import timedelta
 
+from django.conf import settings
+from django.http import HttpResponse, JsonResponse
 from django.utils import timezone
+from django.views import View
 from django.views.generic import TemplateView
 
-from accreditation.models import AccreditationCycle, AccreditationLevel, EvidenceRequirement, EvidenceSubmission
-from core.access import accessible_submissions, department_scope_ids
+from accreditation.models import AccreditationCycle, AccreditationLevel, EvidenceRequirement
+from core.access import accessible_submissions
 from core.mixins import ApprovedUserRequiredMixin
-from core.models import Department
+from core.ratelimit import hit_rate_limit
 
-
-COMPLETED_STATUSES = {EvidenceSubmission.COMPLIED, EvidenceSubmission.CLOSED}
-ACTIVE_REVIEW_STATUSES = {
-    EvidenceSubmission.UNDER_DEAN_REVIEW,
-    EvidenceSubmission.UNDER_AREA_CHAIR_REVIEW,
-    EvidenceSubmission.UNDER_QA_REVIEW,
-}
+from . import services
+from .services import COMPLETED_STATUSES
 
 
 def _points(values, max_value=36):
@@ -31,29 +29,15 @@ class ReportsMonitoringView(ApprovedUserRequiredMixin, TemplateView):
         user = self.request.user
         cycle = AccreditationCycle.objects.filter(is_active=True).first()
         submissions = accessible_submissions(user)
-        total = submissions.count()
-        completed = submissions.filter(status__in=COMPLETED_STATUSES).count()
-        revisions = submissions.filter(status=EvidenceSubmission.NEEDS_REVISION).count()
-        pending = submissions.filter(status__in=ACTIVE_REVIEW_STATUSES).count()
-        readiness = round(completed * 100 / total, 1) if total else 0
-        compliance = round(completed * 100 / total, 1) if total else 0
-
-        departments = []
-        for department in Department.objects.filter(is_active=True, kind=Department.DEPARTMENT).order_by('name'):
-            scoped = submissions.filter(department_id__in=department_scope_ids(department))
-            submitted = scoped.exclude(status=EvidenceSubmission.DRAFT).count()
-            compiled = scoped.filter(status__in=COMPLETED_STATUSES).count()
-            if not submitted and not scoped.exists():
-                continue
-            rate = round(compiled * 100 / submitted) if submitted else 0
-            departments.append({
-                'name': department.name,
-                'submitted': submitted,
-                'compiled': compiled,
-                'compliance': rate,
-                'status': 'On Track' if rate >= 80 else 'At Risk' if rate >= 50 else 'Critical',
-                'tone': 'green' if rate >= 80 else 'gold' if rate >= 50 else 'rose',
-            })
+        data = services.summary(user)
+        readiness, compliance, pending, revisions, total, completed = (
+            data['readiness'],
+            data['compliance'],
+            data['pending'],
+            data['revisions'],
+            data['total'],
+            data['completed'],
+        )
 
         level = AccreditationLevel.objects.filter(cycle=cycle).filter(code='I').first() if cycle else None
         radar_values = []
@@ -80,36 +64,24 @@ class ReportsMonitoringView(ApprovedUserRequiredMixin, TemplateView):
                 reviews__created_at__lt=end,
                 reviews__decision='REQUEST_REVISION',
             ).distinct().count())
+
+        risk_rows = services.risk_recommendations(user)
         context.update({
             'page_title': 'Reports & Monitoring',
             'cycle': cycle,
-            'insights': [
-                {
-                    'message': f'{readiness}% of visible evidence is complied or closed across the current access scope.',
-                    'tone': 'green' if readiness >= 80 else 'gold',
-                    'icon': 'trend-up',
-                },
-                {
-                    'message': f'{pending} evidence items are currently waiting for an assigned internal reviewer.',
-                    'tone': 'gold',
-                    'icon': 'clock',
-                },
-                {
-                    'message': f'{revisions} evidence items are in revision and have been returned to their Program Heads.',
-                    'tone': 'rose' if revisions else 'green',
-                    'icon': 'alert' if revisions else 'check',
-                },
-            ],
             'kpis': [
                 {'value': f'{readiness}%', 'label': 'Overall Readiness', 'delta': f'{total} visible submissions', 'tone': 'green' if readiness >= 80 else 'gold'},
                 {'value': total, 'label': 'Total Submissions', 'delta': f'{pending} pending review', 'tone': 'green'},
                 {'value': f'{compliance}%', 'label': 'Compliance Rate', 'delta': f'{completed} complied or closed', 'tone': 'green' if compliance >= 80 else 'gold'},
                 {'value': revisions, 'label': 'Needs Revision', 'delta': 'Returned for correction', 'tone': 'rose' if revisions else 'green'},
             ],
-            'departments': departments,
+            'departments': services.departments(user),
+            'risk_items': risk_rows,
             'radar_points': radar_points,
             'trend_approval_points': _points(weekly_submitted),
             'trend_revision_points': _points(weekly_revisions),
+            'trend_range_label': services.trend_labels(),
+            'trend_takeaway': services.trend_takeaway(user, weekly_submitted, weekly_revisions),
         })
         return context
 
@@ -119,39 +91,92 @@ class SmartCompanionView(ApprovedUserRequiredMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        submissions = accessible_submissions(self.request.user)
-        revision_count = submissions.filter(status=EvidenceSubmission.NEEDS_REVISION).count()
-        pending_count = submissions.filter(status__in=ACTIVE_REVIEW_STATUSES).count()
+        data = services.summary(self.request.user)
+        mode = 'AVA is connected to an AI provider for grounded answers.' if settings.AI_ENABLED else 'AVA answers are generated from the live database.'
         context.update({
-            'page_title': 'Smart Companion',
+            'page_title': 'AVA Assistant',
+            'companion_mode': mode,
+            'summary': data,
             'companion_insights': [
                 {
                     'title': 'Revision Queue',
-                    'description': f'{revision_count} visible evidence items need correction.',
-                    'tone': 'rose' if revision_count else 'green',
+                    'description': f'{data["revisions"]} visible evidence items need correction.',
+                    'tone': 'rose' if data['revisions'] else 'green',
                 },
                 {
                     'title': 'Pending Review',
-                    'description': f'{pending_count} items are moving through internal review.',
+                    'description': f'{data["pending"]} items are moving through internal review.',
                     'tone': 'gold',
                 },
                 {
-                    'title': 'Database Scope',
-                    'description': 'Responses use the evidence and review records available to your role.',
-                    'tone': 'green',
+                    'title': 'Overall Readiness',
+                    'description': f'{data["readiness"]}% of visible evidence is complied or closed.',
+                    'tone': 'green' if data['readiness'] >= 80 else 'gold',
                 },
             ],
             'sample_prompts': [
                 {
                     'title': 'Evidence Help',
                     'description': 'Find missing files and weak submissions.',
-                    'prompts': ['Which evidence needs revision?', 'Which documents are missing?', 'Check the next review stage.'],
+                    'prompts': [
+                        'Which evidence needs revision?',
+                        'Which documents are missing?',
+                        'Check the next review stage.',
+                        'Which deadlines are approaching?',
+                    ],
                 },
                 {
                     'title': 'Readiness Review',
                     'description': 'Summarize current gaps.',
-                    'prompts': ['Summarize visible readiness.', 'Show pending reviewer work.', 'Show complied evidence.'],
+                    'prompts': [
+                        'Summarize visible readiness.',
+                        'Show pending reviewer work.',
+                        'Show complied evidence.',
+                        'Which departments are at risk?',
+                    ],
                 },
             ],
         })
         return context
+
+
+class AiInsightsView(ApprovedUserRequiredMixin, TemplateView):
+    template_name = 'intelligence/ai_insights.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        data = services.ai_insights(self.request.user)
+        context.update({
+            'page_title': 'AI Insights',
+            'insights': data['insights'],
+            'assessment': data['assessment'],
+            'area_readiness': data['areas'],
+            'top_risk': data['top_risk'],
+            'risk_items': data['risks'],
+            'summary': data['summary'],
+            'companion_mode': 'AVA assessments are grounded in live accreditation data.',
+        })
+        return context
+
+
+class CompanionAskView(ApprovedUserRequiredMixin, View):
+    """POST /smart-companion/ask  ->  grounded answer as JSON."""
+
+    def post(self, request, *args, **kwargs):
+        question = (request.POST.get('question') or '').strip()
+        if not question:
+            return JsonResponse({'error': 'Ask a question.'}, status=400)
+        rate = getattr(settings, 'RATE_LIMIT_COMPANION', {'limit': 30, 'window': 300})
+        if hit_rate_limit(request, 'companion', rate['limit'], rate['window'], identity=request.user.pk):
+            return JsonResponse({'error': 'Too many questions. Please wait a moment.'}, status=429)
+        return JsonResponse(services.generate_answer(request.user, question))
+
+
+class ExportReportView(ApprovedUserRequiredMixin, View):
+    """POST /reports/export -> plain-text monitor report download."""
+
+    def post(self, request, *args, **kwargs):
+        report = services.build_export_report(request.user)
+        response = HttpResponse(report, content_type='text/plain; charset=utf-8')
+        response['Content-Disposition'] = 'attachment; filename="accreditation-report.txt"'
+        return response

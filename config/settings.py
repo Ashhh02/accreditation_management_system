@@ -13,9 +13,13 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 from pathlib import Path
 import os
 
+from dotenv import load_dotenv
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+# Load optional local environment file (never committed).
+load_dotenv(BASE_DIR / '.env')
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
@@ -25,6 +29,14 @@ SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'django-insecure-%20ig3=nm%)7nf8(i(&
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv('DEBUG', 'True').lower() in {'1', 'true', 'yes', 'on'}
+
+# A committed development fallback for SECRET_KEY is only safe while DEBUG.
+# Refuse to boot in production without a real secret.
+if not DEBUG and not os.getenv('DJANGO_SECRET_KEY'):
+    from django.core.exceptions import ImproperlyConfigured
+    raise ImproperlyConfigured(
+        'DJANGO_SECRET_KEY must be set to a strong secret value when DEBUG is disabled.'
+    )
 
 # Demo accounts and the default development password are accepted only when
 # the project is running in demo mode. Production deployments should set
@@ -38,11 +50,14 @@ ALLOWED_HOSTS = [host.strip() for host in os.getenv('DJANGO_ALLOWED_HOSTS', '127
 # Application definition
 
 INSTALLED_APPS = [
+    'daphne',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
+    'whitenoise.runserver_nostatic',
+    'channels',
     'django.contrib.staticfiles',
 
     # Local apps
@@ -56,6 +71,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -83,15 +99,23 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'config.wsgi.application'
+ASGI_APPLICATION = 'config.asgi.application'
 
 
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
-
+#
+# SQLite is the zero-setup development default. Production can override with
+# DJANGO_DB_ENGINE/DJANGO_DB_NAME/... (e.g. postgresql + a PostgreSQL host).
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': os.getenv('DJANGO_DB_ENGINE', 'django.db.backends.sqlite3'),
+        'NAME': os.getenv('DJANGO_DB_NAME', BASE_DIR / 'db.sqlite3'),
+        'USER': os.getenv('DJANGO_DB_USER', ''),
+        'PASSWORD': os.getenv('DJANGO_DB_PASSWORD', ''),
+        'HOST': os.getenv('DJANGO_DB_HOST', ''),
+        'PORT': os.getenv('DJANGO_DB_PORT', ''),
+        'CONN_MAX_AGE': 60,
     }
 }
 
@@ -134,5 +158,159 @@ STATIC_URL = 'static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
+STORAGES = {
+    'default': {'BACKEND': 'django.core.files.storage.FileSystemStorage'},
+    # CompressedStaticFilesStorage avoids needing `collectstatic` for dev/tests.
+    # For strict production caching, switch to
+    # whitenoise.storage.CompressedManifestStaticFilesStorage and run collectstatic.
+    'staticfiles': {'BACKEND': 'whitenoise.storage.CompressedStaticFilesStorage'},
+}
+
 MEDIA_URL = 'media/'
 MEDIA_ROOT = BASE_DIR / 'media'
+
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+
+# Caching
+# -----------------
+# LocMemCache is the zero-setup default for development. Set
+# DJANGO_CACHE_BACKEND=django_redis.cache.RedisCache and
+# DJANGO_CACHE_LOCATION=redis://localhost:6379/1 in production for a shared
+# cache that also backs sessions via django-redis.
+CACHES = {
+    'default': {
+        'BACKEND': os.getenv('DJANGO_CACHE_BACKEND', 'django.core.cache.backends.locmem.LocMemCache'),
+        'LOCATION': os.getenv('DJANGO_CACHE_LOCATION', 'unique-ams-cache'),
+    }
+}
+
+
+# Channel layers (WebSockets)
+# ---------------------------
+# InMemoryChannelLayer is the zero-setup development default and works with no
+# external services (and inside the test runner). Set REDIS_URL
+# (e.g. redis://redis:6379/1) in production to switch to the Redis-backed
+# layer so WebSocket events fan out across multiple processes.
+REDIS_URL = os.getenv('REDIS_URL', '')
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': (
+            'channels_redis.core.RedisChannelLayer'
+            if REDIS_URL else
+            'channels.layers.InMemoryChannelLayer'
+        ),
+        'CONFIG': ({'hosts': [REDIS_URL]} if REDIS_URL else {}),
+    }
+}
+
+
+# Security hardening
+# ------------------
+# On by default in production (DEBUG=False) and off in development. Override
+# either way with DJANGO_ENABLE_HTTPS.
+ENABLE_HTTPS = os.getenv('DJANGO_ENABLE_HTTPS', str(not DEBUG)).lower() in {'1', 'true', 'yes', 'on'}
+
+SECURE_SSL_REDIRECT = ENABLE_HTTPS
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+SESSION_COOKIE_SECURE = ENABLE_HTTPS
+CSRF_COOKIE_SECURE = ENABLE_HTTPS
+CSRF_COOKIE_HTTPONLY = True
+SECURE_HSTS_SECONDS = 31536000 if ENABLE_HTTPS else 0
+SECURE_HSTS_INCLUDE_SUBDOMAINS = ENABLE_HTTPS
+SECURE_HSTS_PRELOAD = ENABLE_HTTPS
+SECURE_REFERRER_POLICY = 'same-origin'
+
+# Rate limiting defaults (per IP, per endpoint).
+RATE_LIMIT_LOGIN = {'limit': 5, 'window': 300}
+RATE_LIMIT_REGISTER = {'limit': 3, 'window': 3600}
+RATE_LIMIT_COMPANION = {'limit': 30, 'window': 300}
+RATE_LIMIT_MESSAGES = {'limit': 60, 'window': 300}
+
+
+# Sessions
+# --------
+# Session cookies are HttpOnly by default in Django. Keep sessions short-lived
+# and bound to the browser in production.
+SESSION_COOKIE_AGE = 60 * 60 * 8
+SESSION_EXPIRE_AT_BROWSER_CLOSE = not DEBUG
+
+
+# Upload limits
+# -------------
+DATA_UPLOAD_MAX_MEMORY_SIZE = 5 * 1024 * 1024  # 5 MB (evidence file payloads live on disk, not memory)
+
+
+# AI / AVA (AI Insights & Assistant) provider
+# -------------------------------------------
+# When AI_BASE_URL and AI_API_KEY are configured, the intelligence engine calls
+# an OpenAI-compatible chat-completions endpoint for generative answers. Without
+# them the engine answers deterministically from the live accreditation data,
+# so the feature always works.
+AI_BASE_URL = os.getenv('AI_BASE_URL', '').rstrip('/')
+AI_API_KEY = os.getenv('AI_API_KEY', '')
+AI_MODEL = os.getenv('AI_MODEL', 'gpt-4o-mini')
+AI_TIMEOUT = int(os.getenv('AI_TIMEOUT', '20'))
+AI_MAX_TOKENS = int(os.getenv('AI_MAX_TOKENS', '900'))
+AI_ENABLED = bool(AI_BASE_URL and AI_API_KEY)
+
+
+# Logging
+# -------
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
+            'style': '{',
+        },
+        'simple': {
+            'format': '{levelname} {asctime} {module} {message}',
+            'style': '{',
+        },
+    },
+    'filters': {
+        'require_debug_false': {
+            '()': 'django.utils.log.RequireDebugFalse',
+        },
+    },
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'simple',
+        },
+        'mail_admins': {
+            'level': 'ERROR',
+            'class': 'django.utils.log.AdminEmailHandler',
+            'filters': ['require_debug_false'],
+        },
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console'],
+            'level': os.getenv('DJANGO_LOG_LEVEL', 'INFO'),
+        },
+        'django.request': {
+            'handlers': ['mail_admins'],
+            'level': 'ERROR',
+            'propagate': False,
+        },
+        'accreditation': {
+            'handlers': ['console'],
+            'level': 'INFO',
+        },
+        'accounts': {
+            'handlers': ['console'],
+            'level': 'INFO',
+        },
+        'intelligence': {
+            'handlers': ['console'],
+            'level': 'INFO',
+        },
+        'resources': {
+            'handlers': ['console'],
+            'level': 'INFO',
+        },
+    },
+}

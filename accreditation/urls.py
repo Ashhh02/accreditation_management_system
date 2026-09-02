@@ -11,6 +11,7 @@ urlpatterns = [
     path('submission-workspace/<slug:area_key>/<slug:subarea_key>/', views.SubmissionWorkspaceView.as_view(), name='submission_workspace_subarea'),
     path('submission-workspace/<slug:area_key>/', views.SubmissionWorkspaceView.as_view(), name='submission_workspace_area'),
     path('evidence/<int:submission_id>/', views.EvidenceDetailView.as_view(), name='evidence_detail'),
+    path('evidence-file/<int:file_id>/download/', views.EvidenceFileDownloadView.as_view(), name='evidence_file_download'),
     path('review/<int:submission_id>/', views.EvidenceReviewView.as_view(), name='evidence_review'),
     path('review-workflow/', views.ReviewWorkflowView.as_view(), name='review_workflow'),
 ]

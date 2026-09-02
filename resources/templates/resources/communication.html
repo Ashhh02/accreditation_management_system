@@ -6,7 +6,7 @@
 {% endblock %}
 
 {% block content %}
-  <div class="communication-page">
+  <div class="communication-page" data-messages-api="{{ messages_api_url }}" data-read-url="{{ read_api_url }}" data-ws-path="{{ ws_path }}" data-active-conversation="{{ active_conversation.id }}" data-current-user="{{ request.user.id }}">
     <header class="communication-header">
       <h1>Communication</h1>
       <p>Internal accreditation collaboration</p>
@@ -21,7 +21,7 @@
 
         <div class="conversation-list">
           {% for conversation in conversations %}
-            <button type="button" class="conversation-item{% if conversation.active %} is-active{% endif %}">
+            <button type="button" class="conversation-item{% if conversation.active %} is-active{% endif %}" data-conversation-id="{{ conversation.id }}">
               <span class="conversation-avatar{% if conversation.initials == 'A3' %} is-gold{% endif %}">
                 {{ conversation.initials }}
                 {% if conversation.online %}<i></i>{% endif %}
@@ -48,12 +48,12 @@
             <div class="thread-avatar">AV</div>
             <div>
               <h2>{{ active_conversation.name }}</h2>
-              <p>Online</p>
+              <p>Internal collaboration</p>
             </div>
           </div>
 
           <div class="thread-actions">
-            <span>Linked: Area II Submission</span>
+            {% if active_conversation.linked %}<span>{{ active_conversation.linked }}</span>{% endif %}
             <button type="button" aria-label="Thread options">...</button>
           </div>
         </header>

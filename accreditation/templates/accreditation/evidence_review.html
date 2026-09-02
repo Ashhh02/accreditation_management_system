@@ -34,7 +34,11 @@
           <div class="evidence-files">
             <h3>Supporting documents</h3>
             {% for file in latest_version.files.all %}
-              <a href="{% if file.file %}{{ file.file.url }}{% else %}{{ file.link_url }}{% endif %}" target="_blank" rel="noreferrer">{{ file.original_name }}</a>
+              {% if file.file %}
+                <a href="{% url 'accreditation:evidence_file_download' file.id %}">{{ file.original_name }}</a>
+              {% else %}
+                <a href="{{ file.link_url }}" target="_blank" rel="noreferrer">{{ file.original_name }}</a>
+              {% endif %}
             {% empty %}<p class="empty-copy">No supporting files or links were submitted.</p>{% endfor %}
           </div>
         </section>

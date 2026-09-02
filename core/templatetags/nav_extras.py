@@ -1,5 +1,4 @@
 from django import template
-from django.urls import resolve
 
 register = template.Library()
 
@@ -49,10 +48,15 @@ _ICONS = {
 
 @register.simple_tag
 def icon(name, css_class='icon'):
+    from django.utils.html import format_html
     from django.utils.safestring import mark_safe
-    paths = _ICONS.get(name, '')
-    return mark_safe(
-        f'<svg class="{css_class}" viewBox="0 0 24 24" fill="none" '
-        f'stroke="currentColor" stroke-width="1.8" stroke-linecap="round" '
-        f'stroke-linejoin="round" aria-hidden="true">{paths}</svg>'
+    # The SVG paths come only from the hardcoded _ICONS dict above, so this
+    # markup never contains user input. css_class is escaped by format_html.
+    paths = mark_safe(_ICONS.get(name, ''))  # nosec B308, B703
+    return format_html(
+        '<svg class="{}" viewBox="0 0 24 24" fill="none" '
+        'stroke="currentColor" stroke-width="1.8" stroke-linecap="round" '
+        'stroke-linejoin="round" aria-hidden="true">{}</svg>',
+        css_class,
+        paths,
     )

@@ -1,6 +1,5 @@
 from datetime import timedelta
 
-from django.db.models import Count
 from django.utils import timezone
 from django.utils.timesince import timesince
 from django.views.generic import TemplateView
@@ -171,6 +170,27 @@ class DashboardView(ApprovedUserRequiredMixin, TemplateView):
             })
 
         context['recent_activity'] = recent_activity
-        context['upcoming_deadlines'] = []
+
+        today = timezone.localdate()
+        horizon = today + timedelta(days=60)
+        upcoming_deadlines = []
+        for requirement in EvidenceRequirement.objects.filter(
+            area__level__cycle=cycle,
+            deadline__isnull=False,
+            deadline__gte=today,
+            deadline__lte=horizon,
+        ).select_related('area').order_by('deadline')[:4]:
+            days_left = (requirement.deadline - today).days
+            outstanding = submissions.filter(
+                requirement_id=requirement.pk,
+            ).exclude(status__in=COMPLETED_STATUSES).count()
+            upcoming_deadlines.append({
+                'days': days_left,
+                'title': f'{requirement.area.code} · {requirement.code}: {requirement.title}',
+                'date_label': f'{requirement.deadline:%b %d, %Y}',
+                'urgent': days_left <= 14,
+                'outstanding': outstanding,
+            })
+        context['upcoming_deadlines'] = upcoming_deadlines
         context['quick_actions'] = ['Submit Evidence', 'Review Queue', 'Upload Document', 'View Reports']
         return context

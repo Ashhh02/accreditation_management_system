@@ -3,7 +3,7 @@ from django.conf import settings
 from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth.forms import PasswordChangeForm
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.contrib.auth.views import PasswordChangeView
+from django.contrib.auth.views import LogoutView, PasswordChangeView
 from django.contrib import messages
 from django.contrib.auth import get_user_model
 from django.core.exceptions import PermissionDenied
@@ -14,8 +14,11 @@ from django.utils import timezone
 from django.views.generic import TemplateView
 
 from core.access import approved_assignments, can_approve_accounts, is_admin_user
+from core.audit import record_audit
 from core.mixins import AccountApprovalMixin, ApprovedUserRequiredMixin
 from core.models import AuditLog, Notification, RoleAssignment, UserProfile
+from core.notifications import create_notification
+from core.ratelimit import hit_rate_limit
 
 from .forms import (
     PortalAuthenticationForm,
@@ -31,21 +34,21 @@ DEMO_LOGIN_OPTIONS = (
         'label': 'Admin',
         'role': 'Full system access',
         'username': 'admin',
-        'password': '123',
+        'password': '123',  # nosec B105 demo-only development password
         'initials': 'AD',
     },
     {
         'label': 'Evidence Uploader',
         'role': 'Prepare and submit evidence',
         'username': 'uploader',
-        'password': '123',
+        'password': '123',  # nosec B105 demo-only development password
         'initials': 'EU',
     },
     {
         'label': 'Approver',
         'role': 'Review and approve evidence',
         'username': 'approver',
-        'password': '123',
+        'password': '123',  # nosec B105 demo-only development password
         'initials': 'AP',
     },
 )
@@ -69,6 +72,7 @@ class PortalLoginView(LoginView):
 
     def form_valid(self, form):
         response = super().form_valid(form)
+        record_audit(self.request, 'LOGIN_SUCCESS', object_type='User', object_id=str(self.request.user.pk))
         if self.request.POST.get('remember_me'):
             self.request.session.set_expiry(None)
         else:
@@ -77,6 +81,11 @@ class PortalLoginView(LoginView):
         if profile and not profile.active_assignment_id and approved_assignments(self.request.user).count() > 1:
             return redirect(f'{reverse("accounts:select_role")}?next={self.get_success_url()}')
         return response
+
+    def form_invalid(self, form):
+        username = self.request.POST.get('username', '')
+        record_audit(self.request, 'LOGIN_FAILED', object_type='User', object_id=username[:64])
+        return super().form_invalid(form)
 
 
 class RegisterView(TemplateView):
@@ -87,10 +96,31 @@ class RegisterView(TemplateView):
 
     def post(self, request, *args, **kwargs):
         form = RegistrationForm(request.POST)
+        rate = getattr(settings, 'RATE_LIMIT_REGISTER', {'limit': 3, 'window': 3600})
+        if hit_rate_limit(request, 'register', rate['limit'], rate['window']):
+            return render(request, self.template_name, {
+                'form': form,
+                'page_title': 'Request an account',
+                'rate_limited': True,
+            })
         if form.is_valid():
             form.save()
+            record_audit(
+                request,
+                'REGISTRATION_REQUESTED',
+                object_type='User',
+                object_id=request.POST.get('username', '').strip()[:64],
+                details={'email': request.POST.get('email', '').strip()},
+            )
             return render(request, 'accounts/registration_pending.html', {'page_title': 'Account pending approval'})
         return render(request, self.template_name, {'form': form, 'page_title': 'Request an account'})
+
+
+class PortalLogoutView(LogoutView):
+    def dispatch(self, request, *args, **kwargs):
+        if request.user.is_authenticated:
+            record_audit(request, 'LOGOUT', object_type='User', object_id=str(request.user.pk))
+        return super().dispatch(request, *args, **kwargs)
 
 
 class SelectRoleView(LoginRequiredMixin, TemplateView):
@@ -108,9 +138,17 @@ class SelectRoleView(LoginRequiredMixin, TemplateView):
     def post(self, request, *args, **kwargs):
         form = RoleSelectionForm(request.user, request.POST)
         if form.is_valid():
+            assignment = form.cleaned_data['assignment']
             profile = request.user.profile
-            profile.active_assignment = form.cleaned_data['assignment']
+            profile.active_assignment = assignment
             profile.save(update_fields=['active_assignment', 'updated_at'])
+            record_audit(
+                request,
+                'ROLE_SELECTED',
+                object_type='RoleAssignment',
+                object_id=str(assignment.pk),
+                details={'role': assignment.role.code, 'department': assignment.department.code},
+            )
             return redirect(request.POST.get('next') or 'dashboard:index')
         return render(request, self.template_name, {
             'form': form,
@@ -132,6 +170,7 @@ class ChangePasswordView(LoginRequiredMixin, PasswordChangeView):
             profile.must_change_password = False
             profile.save(update_fields=['must_change_password', 'updated_at'])
         update_session_auth_hash(self.request, form.user)
+        record_audit(self.request, 'PASSWORD_CHANGED', object_type='User', object_id=str(form.user.pk))
         messages.success(self.request, 'Your password was updated.')
         return response
 
@@ -173,11 +212,14 @@ class UserManagementView(AccountApprovalMixin, TemplateView):
                         approved_by=request.user,
                         approved_at=now,
                     )
-                    Notification.objects.create(
-                        user=user,
+                    create_notification(
+                        user,
                         kind='account',
                         title='Account approved',
                         message='Your JMCFI AMS account is approved. You can now sign in and select your active role.',
+                        entity_type='User',
+                        entity_id=str(user.pk),
+                        target_url=reverse('dashboard:index'),
                     )
                     AuditLog.objects.create(
                         actor=request.user,
@@ -211,6 +253,13 @@ class UserManagementView(AccountApprovalMixin, TemplateView):
             else:
                 user.is_active = action == 'activate'
                 user.save(update_fields=['is_active'])
+                record_audit(
+                    request,
+                    'ACCOUNT_ACTIVATED' if action == 'activate' else 'ACCOUNT_DEACTIVATED',
+                    object_type='User',
+                    object_id=str(user.pk),
+                    details={'username': user.username},
+                )
                 messages.success(request, f'{user.get_full_name() or user.username} was {action}d.')
         elif action == 'assign':
             if not is_admin_user(request.user):
@@ -247,6 +296,15 @@ class UserManagementView(AccountApprovalMixin, TemplateView):
                     object_id=str(assignment.pk),
                     details={'user': target_user.username, 'role': role.code, 'department': department.code},
                 )
+                create_notification(
+                    target_user,
+                    kind='account',
+                    title='Role assigned',
+                    message=f'You were assigned the {role.name} role in {department.name}.',
+                    entity_type='RoleAssignment',
+                    entity_id=str(assignment.pk),
+                    target_url=reverse('accounts:settings_profile'),
+                )
                 messages.success(request, 'Role assignment saved.')
             else:
                 messages.error(request, 'Choose a valid user, internal role, and department.')
@@ -258,6 +316,13 @@ class UserManagementView(AccountApprovalMixin, TemplateView):
             if profile and profile.active_assignment_id == assignment.id:
                 profile.active_assignment = None
                 profile.save(update_fields=['active_assignment', 'updated_at'])
+            record_audit(
+                request,
+                'ROLE_REMOVED',
+                object_type='RoleAssignment',
+                object_id=str(assignment.pk),
+                details={'user': assignment.user.username, 'role': assignment.role.code, 'department': assignment.department.code},
+            )
             assignment.delete()
             messages.success(request, 'Role assignment removed.')
         else:
@@ -349,8 +414,6 @@ class SettingsProfileView(ApprovedUserRequiredMixin, TemplateView):
             'settings_tabs': [
                 {'key': 'profile', 'label': 'Profile', 'icon': 'users', 'active': True},
                 {'key': 'password', 'label': 'Password', 'icon': 'settings', 'active': False},
-                {'key': 'notifications', 'label': 'Notifications', 'icon': 'bell', 'active': False},
-                {'key': 'assistant', 'label': 'Assistant', 'icon': 'sparkle', 'active': False},
             ],
             'profile': profile,
             'form': form or ProfileSettingsForm(user),

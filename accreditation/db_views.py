@@ -1,7 +1,9 @@
 from django.contrib import messages
 from django.core.exceptions import PermissionDenied
 from django.db import transaction
+from django.http import FileResponse, Http404
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils import timezone
 from django.views.generic import TemplateView, View
 
@@ -19,9 +21,10 @@ from .forms import EvidenceSubmissionForm, ReviewActionForm
 from .models import (
     AccreditationArea,
     AccreditationCycle,
-    AccreditationSubArea,
+    EvidenceFile,
     EvidenceRequirement,
     EvidenceSubmission,
+    EvidenceVersion,
 )
 from .workflow import (
     WorkflowError,
@@ -56,6 +59,29 @@ def status_tone(status):
     if status in ACTIVE_REVIEW_STATUSES or status == EvidenceSubmission.SUBMITTED:
         return 'gold'
     return 'slate'
+
+
+VERSION_STATUS_LABELS = dict(EvidenceVersion.STATUS_CHOICES)
+
+
+def version_status_label(status):
+    return VERSION_STATUS_LABELS.get(status, status or 'Draft')
+
+
+def version_status_tone(status):
+    if status == EvidenceVersion.APPROVED:
+        return 'green'
+    if status == EvidenceVersion.NOT_APPROVED:
+        return 'rose'
+    if status == EvidenceVersion.SUPERSEDED:
+        return 'slate'
+    if status == EvidenceVersion.SUBMITTED:
+        return 'gold'
+    return 'slate'
+
+
+def _file_download_url(evidence_file):
+    return reverse('accreditation:evidence_file_download', args=[evidence_file.pk])
 
 
 def _current_cycle():
@@ -390,7 +416,7 @@ class SubmissionWorkspaceView(ApprovedUserRequiredMixin, TemplateView):
         if submission_values:
             from accreditation.models import EvidenceReview
             for submission in submission_values:
-                version = submission.latest_version
+                version = submission.current_version or submission.latest_version
                 if version:
                     for evidence_file in version.files.all():
                         name = evidence_file.original_name or evidence_file.file.name or evidence_file.link_url
@@ -398,6 +424,7 @@ class SubmissionWorkspaceView(ApprovedUserRequiredMixin, TemplateView):
                             'name': name,
                             'meta': f'Version {version.version_number} · {evidence_file.created_at:%b %d, %Y}',
                             'version': f'v{version.version_number}',
+                            'download_url': _file_download_url(evidence_file),
                         })
                 for review in submission.reviews.select_related('reviewer').all()[:3]:
                     remarks.append({
@@ -493,7 +520,21 @@ class EvidenceDetailView(ApprovedUserRequiredMixin, View):
         return get_object_or_404(_scoped_submissions(request.user), pk=submission_id)
 
     def get_context(self, request, submission, form=None):
-        latest = submission.latest_version
+        latest = submission.current_version or submission.latest_version
+        can_download_older = is_admin_user(request.user) or has_role(request.user, 'PROGRAM_HEAD', 'QA')
+        version_history = []
+        for version in submission.versions.prefetch_related('files', 'submitted_by').all():
+            version_history.append({
+                'id': version.id,
+                'number': version.version_number,
+                'status': version_status_label(version.status),
+                'tone': version_status_tone(version.status),
+                'is_current': version.is_current,
+                'submitted_by': version.submitted_by.get_full_name() or version.submitted_by.username,
+                'created_at': version.created_at,
+                'change_remarks': version.change_remarks,
+                'files': version.files.all(),
+            })
         return {
             'page_title': 'My Tasks',
             'submission': submission,
@@ -502,6 +543,8 @@ class EvidenceDetailView(ApprovedUserRequiredMixin, View):
             'subarea': submission.requirement.subarea,
             'latest_version': latest,
             'versions': submission.versions.prefetch_related('files', 'reviews__reviewer').all(),
+            'version_history': version_history,
+            'can_download_older': can_download_older,
             'reviews': submission.reviews.select_related('reviewer', 'reviewer_role').all(),
             'comments': submission.comments.select_related('author').all(),
             'form': form or EvidenceSubmissionForm(instance=submission),
@@ -533,12 +576,38 @@ class EvidenceDetailView(ApprovedUserRequiredMixin, View):
                         form.cleaned_data['actual_situation'],
                         files=form.cleaned_data.get('files'),
                         link_url=form.cleaned_data.get('link_url', ''),
+                        change_remarks=form.cleaned_data.get('change_remarks', ''),
                     )
                     messages.success(request, 'Evidence submitted for review.')
                 return redirect('accreditation:evidence_detail', submission_id=submission.id)
             except (PermissionDenied, WorkflowError) as error:
                 form.add_error(None, str(error))
         return render(request, self.template_name, self.get_context(request, submission, form))
+
+
+class EvidenceFileDownloadView(ApprovedUserRequiredMixin, View):
+    def get(self, request, file_id):
+        evidence_file = get_object_or_404(
+            EvidenceFile.objects.select_related('version__submission', 'uploaded_by'),
+            pk=file_id,
+        )
+        submission = evidence_file.version.submission
+        if submission not in accessible_submissions(request.user):
+            raise PermissionDenied('You do not have access to this document.')
+        reviewer_can_download_older = is_admin_user(request.user) or has_role(request.user, 'PROGRAM_HEAD', 'QA')
+        if not evidence_file.version.is_current and not reviewer_can_download_older:
+            raise PermissionDenied('Older document versions are only available to the Program Head, QA, and administrators.')
+
+        if evidence_file.file:
+            response = FileResponse(
+                evidence_file.file.open('rb'),
+                content_type=evidence_file.content_type or 'application/octet-stream',
+            )
+            response['Content-Disposition'] = f'attachment; filename="{evidence_file.original_name or evidence_file.file.name}"'
+            return response
+        if evidence_file.link_url:
+            return redirect(evidence_file.link_url)
+        raise Http404('This document has no stored file or link to download.')
 
 
 class EvidenceReviewView(ApprovedUserRequiredMixin, View):
@@ -557,7 +626,7 @@ class EvidenceReviewView(ApprovedUserRequiredMixin, View):
             'page_title': 'Review Workflow',
             'submission': submission,
             'requirement': submission.requirement,
-            'latest_version': submission.latest_version,
+            'latest_version': submission.current_version or submission.latest_version,
             'reviews': submission.reviews.select_related('reviewer', 'reviewer_role').all(),
             'comments': submission.comments.select_related('author').all(),
             'form': ReviewActionForm(allow_non_complied=can_mark_non_complied),
@@ -590,7 +659,7 @@ class EvidenceReviewView(ApprovedUserRequiredMixin, View):
             'page_title': 'Review Workflow',
             'submission': submission,
             'requirement': submission.requirement,
-            'latest_version': submission.latest_version,
+            'latest_version': submission.current_version or submission.latest_version,
             'reviews': submission.reviews.select_related('reviewer', 'reviewer_role').all(),
             'comments': submission.comments.select_related('author').all(),
             'form': form,

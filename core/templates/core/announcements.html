@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+{% load static nav_extras %}
+
+{% block extra_css %}
+  <link rel="stylesheet" href="{% static 'css/notifications.css' %}">
+{% endblock %}
+
+{% block content %}
+  <div class="content-header notifications-header">
+    <div>
+      <h1>{{ page_title }}</h1>
+      <p class="content-meta">Official announcements for all approved users</p>
+    </div>
+    {% if can_post %}
+      <a href="{% url 'core:announcement_create' %}" class="btn btn-primary">Post announcement</a>
+    {% endif %}
+  </div>
+
+  <section class="notification-shell">
+    <div class="notification-main">
+      <div class="notification-list-card">
+        {% for announcement in announcements %}
+          <article class="announcement-row">
+            <div class="notification-icon tone-maroon">
+              {% icon 'bell' %}
+            </div>
+            <div class="notification-copy">
+              <div class="notification-topline">
+                <h2>{{ announcement.title }}</h2>
+                <span class="announcement-date">{{ announcement.created_at|date:"M d, Y" }}</span>
+              </div>
+              <p class="notification-message">{{ announcement.body }}</p>
+              <div class="notification-meta">
+                <span>By {{ announcement.created_by.get_full_name|default:announcement.created_by.username }}</span>
+              </div>
+            </div>
+          </article>
+        {% empty %}
+          <p class="empty-state">No announcements yet.</p>
+        {% endfor %}
+      </div>
+    </div>
+  </section>
+{% endblock %}

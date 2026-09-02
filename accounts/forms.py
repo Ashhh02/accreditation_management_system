@@ -7,6 +7,7 @@ from django.core.exceptions import ValidationError
 from django.db import transaction
 
 from core.models import AuditLog, Department, Notification, Role, RoleAssignment, UserProfile
+from core.ratelimit import hit_rate_limit
 
 
 class PortalAuthenticationForm(AuthenticationForm):
@@ -36,6 +37,10 @@ class PortalAuthenticationForm(AuthenticationForm):
     def clean(self):
         username = self.cleaned_data.get('username')
         password = self.cleaned_data.get('password')
+
+        rate = getattr(settings, 'RATE_LIMIT_LOGIN', {'limit': 5, 'window': 300})
+        if hit_rate_limit(self.request, 'login', rate['limit'], rate['window']):
+            raise ValidationError('Too many sign-in attempts. Please try again in a few minutes.')
 
         if username is not None and password:
             login_identifier = username

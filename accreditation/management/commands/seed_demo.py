@@ -20,7 +20,7 @@ from accreditation.models import (
     EvidenceSubmission,
     EvidenceVersion,
 )
-from accreditation.views import AREA_SUBAREAS
+from accreditation.seed_data import AREA_SUBAREAS
 from core.models import AuditLog, Department, Role, RoleAssignment, UserProfile
 
 
@@ -109,7 +109,6 @@ class Command(BaseCommand):
 
         areas = []
         for order, (area_key, area_data) in enumerate(AREA_SUBAREAS.items()):
-            area_number = area_data['code'].split()[-1]
             area, _ = AccreditationArea.objects.update_or_create(
                 level=levels['I'],
                 code=area_data['code'],
@@ -202,11 +201,70 @@ class Command(BaseCommand):
             roles=roles,
             users=demo_users,
         )
+        self._seed_demo_conversations(users=demo_users)
         self.stdout.write(self.style.SUCCESS(
             f'Seeded {len(roles)} internal roles, {len(departments)} departments/programs, '
             f'{len(areas)} areas, {len(DEMO_USERS)} demo accounts, and {sample_count} new sample submissions.'
         ))
         self.stdout.write('Demo accounts use the development-only password 123 without forced first-login password changes.')
+
+    def _seed_demo_conversations(self, users):
+        """Create the shared working group and a 1:1 thread for the demo chat."""
+        from resources.models import Conversation, Message
+
+        users_by_username = {username: user for username, user in users.items()}
+
+        group, _ = Conversation.objects.update_or_create(
+            title='Accreditation Working Group',
+            defaults={
+                'context': 'Internal accreditation collaboration',
+                'is_group_thread': True,
+            },
+        )
+        group.members.set([
+            user
+            for username, user in users_by_username.items()
+            if username in {'admin', 'uploader', 'approver', 'qa', 'accreditation-head'}
+        ])
+        if not group.messages.exists():
+            Message.objects.create(
+                conversation=group,
+                author=users_by_username['qa'],
+                body='Welcome to the accreditation working group. Share evidence-readiness updates and review remarks here.',
+            )
+            Message.objects.create(
+                conversation=group,
+                author=users_by_username['uploader'],
+                body='I am compiling updated faculty credentials for Area II and will upload the revised syllabi this week.',
+            )
+            Message.objects.create(
+                conversation=group,
+                author=users_by_username['approver'],
+                body='Submit each sub-area before the internal deadline window closes so there is enough buffer for review.',
+            )
+
+        dean = users_by_username.get('approver') or users_by_username.get('dean')
+        uploader = users_by_username.get('uploader')
+        if dean and uploader:
+            thread, _ = Conversation.objects.update_or_create(
+                title='Area II · Faculty Credentials',
+                defaults={
+                    'context': 'College of Engineering',
+                    'is_group_thread': False,
+                },
+            )
+            thread.members.set([dean, uploader])
+            if not thread.messages.exists():
+                Message.objects.create(
+                    conversation=thread,
+                    author=dean,
+                    body='Please prioritize full-time faculty credentials and ensure Special Professional Licenses are included.',
+                )
+                Message.objects.create(
+                    conversation=thread,
+                    author=uploader,
+                    body='Understood. I will compile everything and submit ahead of the deadline to give enough buffer for review.',
+                )
 
     def _seed_demo_submissions(self, areas, departments, roles, users):
         """Create repeatable evidence activity so development dashboards are useful."""
@@ -342,8 +400,25 @@ class Command(BaseCommand):
                         'last_updated_by',
                         'last_updated',
                     ])
+                    if status == EvidenceSubmission.NEEDS_REVISION:
+                        version_status = EvidenceVersion.NOT_APPROVED
+                    else:
+                        version_status = EvidenceVersion.SUBMITTED
+                    EvidenceVersion.objects.filter(pk=demo_version.pk).update(
+                        status=version_status,
+                        is_current=True,
+                    )
                 continue
             created_count += 1
+
+            if status == EvidenceSubmission.DRAFT:
+                version_status = EvidenceVersion.DRAFT
+            elif status in {EvidenceSubmission.CLOSED, EvidenceSubmission.COMPLIED}:
+                version_status = EvidenceVersion.APPROVED
+            elif status in {EvidenceSubmission.NEEDS_REVISION, EvidenceSubmission.NON_COMPLIED}:
+                version_status = EvidenceVersion.NOT_APPROVED
+            else:
+                version_status = EvidenceVersion.SUBMITTED
 
             version = EvidenceVersion.objects.create(
                 submission=submission,
@@ -352,6 +427,8 @@ class Command(BaseCommand):
                 actual_situation=submission.actual_situation,
                 submitted_by=program_head,
                 notes='Seeded development demo evidence.',
+                status=version_status,
+                is_current=True,
             )
             EvidenceFile.objects.create(
                 version=version,

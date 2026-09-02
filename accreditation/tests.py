@@ -1,11 +1,13 @@
 from django.contrib.auth import get_user_model
 from django.core.exceptions import PermissionDenied
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
 
 from core.models import Department, Role, RoleAssignment, UserProfile
 
+from .forms import EvidenceSubmissionForm
 from .models import (
     AccreditationArea,
     AccreditationCycle,
@@ -68,7 +70,7 @@ class AccreditationWorkflowTests(TestCase):
 
     @classmethod
     def make_user(cls, username, name, role, department):
-        user = get_user_model().objects.create_user(username=username, password='secure-password')
+        user = get_user_model().objects.create_user(username=username, password='secure-password')  # nosec B106 test fixture only
         user.first_name = name
         user.save(update_fields=['first_name'])
         profile = UserProfile.objects.create(
@@ -174,6 +176,61 @@ class AccreditationWorkflowTests(TestCase):
         self.assertContains(response, 'Deadline:')
         self.assertNotContains(response, 'Sub-Areas')
 
+    def test_versioning_supersedes_old_versions_and_marks_statuses(self):
+        submission = self.make_submission()
+        submit_submission(submission, self.program_head, 'v1 self', 'v1 actual', link_url='https://example.com/a', change_remarks='Initial upload')
+        v1 = EvidenceVersion.objects.get(submission=submission, version_number=1)
+        self.assertTrue(v1.is_current)
+        self.assertEqual(v1.status, EvidenceVersion.SUBMITTED)
+        self.assertEqual(v1.change_remarks, 'Initial upload')
+
+        request_revision(submission, self.dean, 'Please add the signed approval page.')
+        v1.refresh_from_db()
+        self.assertEqual(v1.status, EvidenceVersion.NOT_APPROVED)
+
+        submit_submission(submission, self.program_head, 'v2 self', 'v2 actual', link_url='https://example.com/b', change_remarks='Added signed page')
+        v1.refresh_from_db()
+        v2 = EvidenceVersion.objects.get(submission=submission, version_number=2)
+        self.assertEqual(v1.status, EvidenceVersion.SUPERSEDED)
+        self.assertFalse(v1.is_current)
+        self.assertTrue(v2.is_current)
+        self.assertEqual(v2.status, EvidenceVersion.SUBMITTED)
+
+        approve_submission(submission, self.dean, 'Dean ok')
+        approve_submission(submission, self.area_chair, 'Area ok')
+        approve_submission(submission, self.qa, 'QA ok')
+        v2.refresh_from_db()
+        self.assertEqual(v2.status, EvidenceVersion.APPROVED)
+        self.assertTrue(v2.is_current)
+        self.assertEqual(submission.current_version.pk, v2.pk)
+
+    def test_older_version_download_gated_for_reviewers_but_allowed_for_ph_and_qa(self):
+        submission = self.make_submission()
+        submit_submission(submission, self.program_head, 'v1 self', 'v1 actual', link_url='https://example.com/v1')
+        request_revision(submission, self.dean, 'Please revise.')
+        submit_submission(submission, self.program_head, 'v2 self', 'v2 actual', link_url='https://example.com/v2')
+        old_file = EvidenceFile.objects.get(version__version_number=1)
+
+        self.client.force_login(self.dean)
+        response = self.client.get(reverse('accreditation:evidence_file_download', args=[old_file.id]))
+        self.assertEqual(response.status_code, 403)
+
+        self.client.force_login(self.qa)
+        response = self.client.get(reverse('accreditation:evidence_file_download', args=[old_file.id]))
+        self.assertEqual(response.status_code, 302)
+        self.assertIn('example.com/v1', response.url)
+
+        self.client.force_login(self.program_head)
+        response = self.client.get(reverse('accreditation:evidence_file_download', args=[old_file.id]))
+        self.assertEqual(response.status_code, 302)
+        self.assertIn('example.com/v1', response.url)
+
+        current_file = EvidenceFile.objects.get(version__version_number=2)
+        self.client.force_login(self.dean)
+        response = self.client.get(reverse('accreditation:evidence_file_download', args=[current_file.id]))
+        self.assertEqual(response.status_code, 302)
+        self.assertIn('example.com/v2', response.url)
+
     def test_workspace_submit_button_uses_the_workflow_service(self):
         submission = self.make_submission()
         submission.self_evaluation = 'Prepared self evaluation'
@@ -195,3 +252,54 @@ class AccreditationWorkflowTests(TestCase):
         self.assertRedirects(response, reverse('accreditation:submission_workspace_subarea', args=[self.area.slug, '1-1']))
         submission.refresh_from_db()
         self.assertEqual(submission.status, EvidenceSubmission.UNDER_DEAN_REVIEW)
+
+    def test_evidence_form_rejects_unsupported_file_types(self):
+        submission = self.make_submission()
+        html_file = SimpleUploadedFile('index.html', b'<script>alert(1)</script>', content_type='text/html')
+        form = EvidenceSubmissionForm(
+            {'self_evaluation': 'x', 'actual_situation': 'y'},
+            {'files': [html_file]},
+            instance=submission,
+        )
+
+        self.assertFalse(form.is_valid())
+        self.assertIn('files', form.errors)
+
+    def test_evidence_form_rejects_mislabeled_executable_and_oversized_files(self):
+        submission = self.make_submission()
+        exe_file = SimpleUploadedFile(
+            'evidence.pdf',
+            b'MZ\x90\x00\x03\x00\x00\x00',
+            content_type='application/x-msdownload',
+        )
+        form = EvidenceSubmissionForm(
+            {'self_evaluation': 'x', 'actual_situation': 'y'},
+            {'files': [exe_file]},
+            instance=submission,
+        )
+        self.assertFalse(form.is_valid())
+
+        big_file = SimpleUploadedFile('big.pdf', b'0' * (5 * 1024 * 1024 + 1), content_type='application/pdf')
+        form = EvidenceSubmissionForm(
+            {'self_evaluation': 'x', 'actual_situation': 'y'},
+            {'files': [big_file]},
+            instance=submission,
+        )
+        self.assertFalse(form.is_valid())
+        self.assertIn('files', form.errors)
+
+    def test_evidence_form_accepts_allowed_document_files(self):
+        submission = self.make_submission()
+        for name, content_type in (
+            ('evidence.pdf', 'application/pdf'),
+            ('notes.docx', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'),
+            ('photo.jpg', 'image/jpeg'),
+            ('sheet.xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'),
+        ):
+            uploaded = SimpleUploadedFile(name, b'%s' % name.encode(), content_type=content_type)
+            form = EvidenceSubmissionForm(
+                {'self_evaluation': 'x', 'actual_situation': 'y'},
+                {'files': [uploaded]},
+                instance=submission,
+            )
+            self.assertTrue(form.is_valid(), form.errors)

@@ -1,0 +1,98 @@
+{% extends 'base.html' %}
+{% load static nav_extras %}
+
+{% block extra_css %}
+  <link rel="stylesheet" href="{% static 'css/smart_companion.css' %}">
+  <link rel="stylesheet" href="{% static 'css/ai_insights.css' %}">
+{% endblock %}
+
+{% block content %}
+  <div class="insights-page" data-ask-url="{% url 'intelligence:companion_ask' %}">
+    <header class="insights-header">
+      <div>
+        <h1>AI Insights</h1>
+        <p>{{ companion_mode }} Automatic assessments are advisory, not accreditor decisions.</p>
+      </div>
+      <a href="{% url 'intelligence:smart_companion' %}" class="insights-chat-link">
+        {% icon 'message' %}
+        Ask AVA directly
+      </a>
+    </header>
+
+    <section class="insights-ava-card">
+      <div class="companion-bot-icon">{% icon 'sparkle' %}</div>
+      <div>
+        <h2>AVA — Accreditation Virtual Assistant</h2>
+        <p>{{ assessment }}</p>
+      </div>
+    </section>
+
+    <section class="insight-section">
+      <div class="insight-section-head">
+        <h2>Live Readiness Signals</h2>
+        <span>Derived from submission, review, deadline, and versioning data</span>
+      </div>
+      <div class="insight-grid">
+        {% for insight in insights %}
+          <article class="insight-card tone-{{ insight.tone }}">
+            <div class="insight-card-head">
+              {% icon insight.icon %}
+            </div>
+            <h3>{{ insight.title }}</h3>
+            <p>{{ insight.description }}</p>
+          </article>
+        {% empty %}
+          <p class="empty-copy">No insights available for the current scope yet.</p>
+        {% endfor %}
+      </div>
+    </section>
+
+    {% if area_readiness %}
+      <section class="insight-section">
+        <div class="insight-section-head">
+          <h2>Area Readiness Coverage</h2>
+          <span>Level I · current access scope</span>
+        </div>
+        <div class="insight-area-list">
+          {% for area in area_readiness %}
+            <article class="insight-area-row">
+              <strong>{{ area.code }}</strong>
+              <div class="insight-area-bar"><i class="tone-{{ area.tone }}" style="width: {{ area.rate }}%;"></i></div>
+              <span>{{ area.rate }}% · {{ area.name }}</span>
+            </article>
+          {% endfor %}
+        </div>
+      </section>
+    {% endif %}
+
+    <section class="insight-section">
+      <div class="insight-section-head">
+        <h2>Ask AVA</h2>
+        <span>Answers are grounded in the live accreditation database</span>
+      </div>
+      <div class="companion-card insights-ask-card">
+        <div class="companion-body">
+          <div class="sample-prompt-section" aria-label="Sample prompts">
+            <div class="sample-prompt-head">
+              <h2>Try a sample prompt or write your own</h2>
+            </div>
+            <div class="sample-prompt-list sample-prompt-list-compact">
+              <button type="button">Which evidence needs revision?</button>
+              <button type="button">Which documents are missing?</button>
+              <button type="button">What is the readiness summary?</button>
+              <button type="button">Which departments are at risk?</button>
+            </div>
+          </div>
+          <section class="companion-replies" aria-live="polite"></section>
+        </div>
+        <footer class="companion-composer">
+          <div class="composer-row">
+            <input type="text" placeholder="Ask AVA about requirements, gaps, or deadlines...">
+            <button type="button" aria-label="Send message">{% icon 'chevron-right' %}</button>
+          </div>
+          <p>AVA responses are advisory only. Formal accreditation decisions rest with the accrediting body.</p>
+        </footer>
+      </div>
+    </section>
+  </div>
+{% endblock %}

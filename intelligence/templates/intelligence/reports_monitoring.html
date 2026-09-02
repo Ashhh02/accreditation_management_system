@@ -15,7 +15,7 @@
 
       <div class="report-actions">
         <button type="button" class="print-btn">Print</button>
-        <button type="button" class="export-btn">Export PDF</button>
+        <form method="post" action="{% url 'intelligence:export_report' %}">{% csrf_token %}<button type="submit" class="export-btn">Export Report</button></form>
       </div>
     </header>
 
@@ -31,15 +31,16 @@
 
     <section class="insight-panel">
       <div class="insight-head">
-        <h2>{% icon 'bolt' %} AI-Generated Insights</h2>
-        <span>Advisory Only</span>
+        <h2>{% icon 'bolt' %} Command Center Overview</h2>
+        <span>{{ cycle.academic_year }} · {{ cycle.name }}</span>
       </div>
 
-      <div class="insight-grid">
-        {% for insight in insights %}
-          <article class="insight-card tone-{{ insight.tone }}">
-            {% icon insight.icon %}
-            <p>{{ insight.message }}</p>
+      <div class="report-kpi-grid" aria-label="Report metrics">
+        {% for kpi in kpis %}
+          <article class="report-kpi-card">
+            <strong>{{ kpi.value }}</strong>
+            <span>{{ kpi.label }}</span>
+            <em class="tone-{{ kpi.tone }}">{{ kpi.delta }}</em>
           </article>
         {% endfor %}
       </div>
@@ -47,16 +48,6 @@
 
     <div class="report-tab-panels">
       <section class="report-panel overview-panel">
-        <section class="report-kpi-grid" aria-label="Report metrics">
-          {% for kpi in kpis %}
-            <article class="report-kpi-card">
-              <strong>{{ kpi.value }}</strong>
-              <span>{{ kpi.label }}</span>
-              <em class="tone-{{ kpi.tone }}">{{ kpi.delta }}</em>
-            </article>
-          {% endfor %}
-        </section>
-
         <section class="report-chart-grid">
           <article class="report-chart-card">
             <div class="chart-head">
@@ -84,13 +75,43 @@
           <article class="report-chart-card">
             <div class="chart-head">
               <h2>Revision vs. Approval Trend</h2>
-              <p>June - July 2026</p>
+              <p>{{ trend_range_label }}</p>
             </div>
 
             <div class="line-chart" aria-label="Revision versus approval trend chart">
               {% include 'intelligence/partials/_trend_chart.html' %}
             </div>
           </article>
+        </section>
+
+        <section class="report-risk-card">
+          <div class="chart-head">
+            <h2>{% icon 'shield' %} AI-Identified Risks &amp; Recommendations</h2>
+            <p>Advisory · derived from live submission, deadline, and review data</p>
+          </div>
+
+          <table class="risk-table">
+            <thead>
+              <tr>
+                <th>Department</th>
+                <th>Severity</th>
+                <th>Compliance</th>
+                <th>Recommendation</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for risk in risk_items %}
+                <tr>
+                  <td><strong>{{ risk.department }}</strong></td>
+                  <td><em class="department-status tone-{{ risk.tone }}">{{ risk.severity }}</em></td>
+                  <td>{{ risk.compliance }}%</td>
+                  <td>{{ risk.recommendation }}</td>
+                </tr>
+              {% empty %}
+                <tr><td colspan="4">No risk items in the current scope.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
         </section>
       </section>
 
@@ -154,7 +175,7 @@
         <article class="report-chart-card trends-chart-card">
           <div class="chart-head">
             <h2>Weekly Submission Trend</h2>
-            <p>Revision rate declining - approval rate improving steadily</p>
+            <p>{{ trend_takeaway }}</p>
           </div>
 
           <div class="line-chart is-large" aria-label="Weekly submission trend chart">

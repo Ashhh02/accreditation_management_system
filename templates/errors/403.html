@@ -1,0 +1,10 @@
+{% extends 'base.html' %}
+{% block title %}Forbidden · JMCFI AMS{% endblock %}
+{% block content %}
+  <div class="error-page">
+    <h1>403</h1>
+    <h2>Access Denied</h2>
+    <p>You do not have permission to view this page. Contact your administrator if this is unexpected.</p>
+    <a href="{% url 'dashboard:index' %}">Return to Dashboard</a>
+  </div>
+{% endblock %}

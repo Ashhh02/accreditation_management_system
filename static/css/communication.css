@@ -284,6 +284,15 @@
   font-size: 12px;
 }
 
+.message-row.is-pending .message-bubble {
+  opacity: 0.55;
+}
+
+.message-row.is-pending time {
+  color: var(--color-text-faint);
+  font-style: italic;
+}
+
 .message-composer {
   min-height: 66px;
   display: grid;

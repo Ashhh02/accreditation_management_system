@@ -68,8 +68,13 @@ def site_nav(request):
                     'url_name': 'intelligence:reports_monitoring',
                 },
                 {
-                    'label': 'Smart Companion',
+                    'label': 'AI Insights',
                     'icon': 'sparkle',
+                    'url_name': 'intelligence:ai_insights',
+                },
+                {
+                    'label': 'AVA Assistant',
+                    'icon': 'message',
                     'url_name': 'intelligence:smart_companion',
                 },
             ],
@@ -108,6 +113,11 @@ def site_nav(request):
             'label': 'Audit History',
             'icon': 'clock',
             'url_name': 'core:audit_history',
+        })
+        admin_items.insert(2, {
+            'label': 'Announcements',
+            'icon': 'bell',
+            'url_name': 'core:announcements',
         })
     nav_sections[-1]['items'] = admin_items
 

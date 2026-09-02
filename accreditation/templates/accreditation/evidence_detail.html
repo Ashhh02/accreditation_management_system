@@ -63,6 +63,11 @@
                 {{ form.link_url }}
                 {% for error in form.link_url.errors %}<em>{{ error }}</em>{% endfor %}
               </label>
+              <label>
+                <span>{{ form.change_remarks.label }}</span>
+                {{ form.change_remarks }}
+                {% for error in form.change_remarks.errors %}<em>{{ error }}</em>{% endfor %}
+              </label>
               <div class="evidence-form-actions">
                 <a href="{% url 'accreditation:submission_workspace_subarea' area.slug subarea.code|slugify %}" class="evidence-secondary-btn">Cancel</a>
                 <button type="submit" name="action" value="save_draft" class="evidence-secondary-btn">Save Draft</button>
@@ -116,11 +121,27 @@
         <section class="evidence-card evidence-side-card">
           <h2>Version history</h2>
           <div class="version-list">
-            {% for version in versions %}
-              <article>
-                <strong>Version {{ version.version_number }}</strong>
-                <span>{{ version.submitted_by.get_full_name|default:version.submitted_by.username }} · {{ version.created_at|date:'M d, Y H:i' }}</span>
-                {% for file in version.files.all %}<a href="{% if file.file %}{{ file.file.url }}{% else %}{{ file.link_url }}{% endif %}" target="_blank" rel="noreferrer">{{ file.original_name }}</a>{% endfor %}
+            {% for version in version_history %}
+              <article class="version-item {% if version.is_current %}is-current{% endif %}">
+                <div class="version-item-head">
+                  <strong>Version {{ version.number }}</strong>
+                  {% if version.is_current %}<span class="version-current-badge">Current</span>{% endif %}
+                  <span class="version-status-chip tone-{{ version.tone }}">{{ version.status }}</span>
+                </div>
+                <span>{{ version.submitted_by }} · {{ version.created_at|date:'M d, Y H:i' }}</span>
+                {% if version.change_remarks %}<p class="version-remarks">{{ version.change_remarks }}</p>{% endif %}
+                <div class="version-files">
+                  {% for file in version.files.all %}
+                    {% if file.file %}
+                      <a href="{% url 'accreditation:evidence_file_download' file.id %}">{{ file.original_name }}</a>
+                    {% else %}
+                      <a href="{{ file.link_url }}" target="_blank" rel="noreferrer">{{ file.original_name }}</a>
+                    {% endif %}
+                  {% endfor %}
+                </div>
+                {% if not version.is_current and not can_download_older and version.files.all|length %}
+                  <em class="version-restricted">Older versions are restricted to Program Head, QA, and administrators.</em>
+                {% endif %}
               </article>
             {% empty %}
               <p class="empty-copy">No submitted versions yet.</p>

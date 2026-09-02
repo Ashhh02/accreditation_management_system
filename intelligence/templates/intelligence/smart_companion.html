@@ -6,18 +6,18 @@
 {% endblock %}
 
 {% block content %}
-  <div class="companion-page">
+  <div class="companion-page" data-ask-url="{% url 'intelligence:companion_ask' %}">
     <header class="companion-header">
-      <h1>Smart Companion</h1>
-      <p>AI-assisted guidance for accreditation - advisory only</p>
+      <h1>AVA Assistant</h1>
+      <p>{{ companion_mode }}</p>
     </header>
 
     <section class="companion-card">
       <div class="companion-card-head">
         <div class="companion-bot-icon">{% icon 'sparkle' %}</div>
         <div>
-          <h2>JMCFI Accreditation Companion</h2>
-          <p>Advisory · Powered by AI · Not a substitute for official guidance</p>
+          <h2>AVA — Accreditation Virtual Assistant</h2>
+          <p>Advisory · CHED, PACUCOA, PAASCU &amp; AACCUP-aligned guidance · Grounded in live data</p>
         </div>
       </div>
 
@@ -26,7 +26,7 @@
           <div class="companion-bot-icon">{% icon 'sparkle' %}</div>
           <div class="message-stack">
             <div class="assistant-bubble">
-              Hello! I'm your JMCFI Accreditation Smart Companion. I can help you understand requirements, identify gaps, track submissions, and provide guidance throughout the accreditation process. How can I assist you today?
+              Hello! I'm AVA, your accreditation virtual assistant. I can help you understand evidence requirements, spot gaps and risks, track deadlines, and prepare for internal readiness review in a Philippine accreditation context. How can I assist you today?
             </div>
 
             <div class="insight-stack">
@@ -41,24 +41,26 @@
               {% endfor %}
             </div>
 
-            <time>Companion · 10:00 AM</time>
+            <time>AVA · {{ summary.readiness }}% readiness in scope</time>
           </div>
         </article>
 
         <section class="sample-prompt-section" aria-label="Sample prompts">
           <div class="sample-prompt-head">
             <h2>Try a sample prompt</h2>
-            <p>Start with one question, or write your own below.</p>
+            <p>Start with one question, or write your own below. Answers are grounded in live accreditation data.</p>
           </div>
 
           <div class="sample-prompt-list sample-prompt-list-compact">
             {% for group in sample_prompts %}
-              {% for prompt in group.prompts|slice:":1" %}
+              {% for prompt in group.prompts|slice:":2" %}
                 <button type="button">{{ prompt }}</button>
               {% endfor %}
             {% endfor %}
           </div>
         </section>
+
+        <section class="companion-replies" aria-live="polite"></section>
       </div>
 
       <footer class="companion-composer">
@@ -66,7 +68,7 @@
           <input type="text" placeholder="Ask about requirements, missing documents, or deadlines...">
           <button type="button" aria-label="Send message">{% icon 'chevron-right' %}</button>
         </div>
-        <p>AI responses are advisory only. Verify with your QA Office.</p>
+        <p>AVA responses are advisory only. Formal accreditation decisions rest with the accrediting body.</p>
       </footer>
     </section>
   </div>

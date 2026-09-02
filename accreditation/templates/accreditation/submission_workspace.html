@@ -197,7 +197,7 @@
               <article class="document-item">
                 {% icon 'file' %}
                 <div>
-                  <h3>{{ document.name }}</h3>
+                  <h3><a href="{{ document.download_url }}">{{ document.name }}</a></h3>
                   <p>{{ document.meta }}</p>
                 </div>
                 <span>{{ document.version }}</span>

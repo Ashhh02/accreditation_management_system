@@ -12,7 +12,7 @@ class LoginPageTests(TestCase):
         self.user = get_user_model().objects.create_user(
             username='qa-admin',
             email='qa-admin@jmcfi.edu.ph',
-            password='safe-test-password',
+            password='safe-test-password',  # nosec B106 test fixture only
         )
         self.profile = UserProfile.objects.create(
             user=self.user,
@@ -39,7 +39,7 @@ class LoginPageTests(TestCase):
             reverse('login'),
             {
                 'username': self.user.username,
-                'password': 'safe-test-password',
+                'password': 'safe-test-password',  # nosec B105 test fixture only
             },
         )
 
@@ -50,7 +50,7 @@ class LoginPageTests(TestCase):
             reverse('login'),
             {
                 'username': self.user.email,
-                'password': 'safe-test-password',
+                'password': 'safe-test-password',  # nosec B105 test fixture only
             },
         )
 
@@ -75,7 +75,7 @@ class LoginPageTests(TestCase):
 
     def test_admin_can_approve_pending_account(self):
         admin_role = Role.objects.create(code='ADMIN', name='Admin')
-        admin = get_user_model().objects.create_user(username='admin-user', password='admin-password')
+        admin = get_user_model().objects.create_user(username='admin-user', password='admin-password')  # nosec B106 test fixture only
         admin_profile = UserProfile.objects.create(
             user=admin,
             department=self.department,
@@ -89,7 +89,7 @@ class LoginPageTests(TestCase):
         )
         admin_profile.active_assignment = admin_assignment
         admin_profile.save(update_fields=['active_assignment'])
-        pending = get_user_model().objects.create_user(username='pending-user', password='pending-password', is_active=False)
+        pending = get_user_model().objects.create_user(username='pending-user', password='pending-password', is_active=False)  # nosec B106 test fixture only
         pending_profile = UserProfile.objects.create(
             user=pending,
             department=self.department,

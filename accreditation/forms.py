@@ -3,6 +3,28 @@ from django import forms
 from .models import EvidenceSubmission
 
 
+ALLOWED_EXTENSIONS = {'.pdf', '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx', '.jpg', '.jpeg', '.png'}
+
+ALLOWED_FILE_TYPES = {
+    'application/pdf',
+    'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'application/vnd.ms-excel',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    'application/vnd.ms-powerpoint',
+    'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+    'image/jpeg',
+    'image/png',
+}
+
+# Aligned with DATA_UPLOAD_MAX_MEMORY_SIZE so a single file can never push a
+# request over the body cap.
+MAX_UPLOAD_SIZE = 5 * 1024 * 1024
+
+
+GENERIC_FILE_TYPES = {'application/octet-stream'}
+
+
 class MultipleFileInput(forms.ClearableFileInput):
     allow_multiple_selected = True
 
@@ -38,6 +60,32 @@ class EvidenceSubmissionForm(forms.ModelForm):
                 'placeholder': 'Describe the current situation, implementation, and any gaps.',
             }),
         }
+
+    change_remarks = forms.CharField(
+        required=False,
+        label='What changed in this version? (optional)',
+        widget=forms.Textarea(attrs={
+            'rows': 2,
+            'placeholder': 'Briefly describe what is new or different in this upload (used in the version history).',
+        }),
+    )
+
+    def clean_files(self):
+        files = self.cleaned_data.get('files') or []
+        for uploaded in files:
+            if uploaded.size and uploaded.size > MAX_UPLOAD_SIZE:
+                raise forms.ValidationError('Each supporting file must be smaller than 5 MB.')
+            name = (uploaded.name or '').lower()
+            extension = name.rsplit('.', 1)[-1].__str__() if '.' in name else ''
+            extension = f'.{extension}' if extension else ''
+            content_type = (uploaded.content_type or '').lower()
+            if extension not in ALLOWED_EXTENSIONS:
+                raise forms.ValidationError(
+                    'Unsupported file type. Allowed: PDF, Word, Excel, PowerPoint, and JPEG/PNG images.'
+                )
+            if content_type and content_type not in ALLOWED_FILE_TYPES | GENERIC_FILE_TYPES:
+                raise forms.ValidationError('The file content does not match an allowed document type.')
+        return files
 
 
 class ReviewActionForm(forms.Form):

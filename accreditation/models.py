@@ -199,14 +199,34 @@ class EvidenceSubmission(models.Model):
     def latest_version(self):
         return self.versions.order_by('-version_number').first()
 
+    @property
+    def current_version(self):
+        return self.versions.filter(is_current=True).order_by('-version_number').first()
+
 
 class EvidenceVersion(models.Model):
+    DRAFT = 'DRAFT'
+    SUBMITTED = 'SUBMITTED'
+    NOT_APPROVED = 'NOT_APPROVED'
+    APPROVED = 'APPROVED'
+    SUPERSEDED = 'SUPERSEDED'
+    STATUS_CHOICES = (
+        (DRAFT, 'Draft'),
+        (SUBMITTED, 'Submitted'),
+        (NOT_APPROVED, 'Not Approved'),
+        (APPROVED, 'Approved'),
+        (SUPERSEDED, 'Superseded'),
+    )
+
     submission = models.ForeignKey(EvidenceSubmission, on_delete=models.CASCADE, related_name='versions')
     version_number = models.PositiveIntegerField()
     self_evaluation = models.TextField(blank=True)
     actual_situation = models.TextField(blank=True)
     submitted_by = models.ForeignKey('auth.User', on_delete=models.PROTECT, related_name='evidence_versions')
     notes = models.TextField(blank=True)
+    change_remarks = models.TextField(blank=True)
+    status = models.CharField(max_length=25, choices=STATUS_CHOICES, default=DRAFT)
+    is_current = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -214,6 +234,9 @@ class EvidenceVersion(models.Model):
         constraints = [
             models.UniqueConstraint(fields=('submission', 'version_number'), name='unique_submission_version'),
         ]
+
+    def __str__(self):
+        return f'v{self.version_number} · {self.get_status_display()}'
 
 
 class EvidenceFile(models.Model):

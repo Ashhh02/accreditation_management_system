@@ -146,10 +146,13 @@ class Notification(models.Model):
         on_delete=models.CASCADE,
         related_name='notifications',
     )
-    kind = models.CharField(max_length=40, default='workflow')
+    kind = models.CharField(max_length=40, default='workflow', db_index=True)
     title = models.CharField(max_length=180)
     message = models.TextField()
-    is_read = models.BooleanField(default=False)
+    is_read = models.BooleanField(default=False, db_index=True)
+    entity_type = models.CharField(max_length=100, blank=True, db_index=True)
+    entity_id = models.CharField(max_length=64, blank=True, db_index=True)
+    target_url = models.CharField(max_length=255, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -179,3 +182,16 @@ class AuditLog(models.Model):
 
     class Meta:
         ordering = ('-created_at',)
+
+
+class Announcement(models.Model):
+    title = models.CharField(max_length=180)
+    body = models.TextField()
+    created_by = models.ForeignKey('auth.User', null=True, blank=True, on_delete=models.SET_NULL, related_name='announcements')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ('-created_at',)
+
+    def __str__(self):
+        return self.title
