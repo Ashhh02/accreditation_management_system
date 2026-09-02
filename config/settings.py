@@ -32,7 +32,8 @@ DEBUG = os.getenv('DEBUG', 'True').lower() in {'1', 'true', 'yes', 'on'}
 # The key MUST come from the environment (DJANGO_SECRET_KEY) or a local .env
 # file. No fallback secret is committed to the repository, and the process
 # refuses to start in production without one so a leaked value can never be
-# silently reused. In development only, a random per-process key is generated.
+# silently reused. In development a per-machine key is generated and persisted
+# to .env so signed sessions survive server restarts.
 SECRET_KEY = os.getenv('DJANGO_SECRET_KEY')
 if not SECRET_KEY:
     if not DEBUG:
@@ -41,6 +42,15 @@ if not SECRET_KEY:
             'DJANGO_SECRET_KEY must be set to a strong secret value when DEBUG is disabled.'
         )
     SECRET_KEY = secrets.token_urlsafe(64)
+    env_file = BASE_DIR / '.env'
+    try:
+        if not env_file.exists():
+            env_file.write_text(f'DJANGO_SECRET_KEY={SECRET_KEY}\n', encoding='utf-8')
+        elif 'DJANGO_SECRET_KEY=' not in env_file.read_text(encoding='utf-8'):
+            with env_file.open('a', encoding='utf-8') as fh:
+                fh.write(f'\nDJANGO_SECRET_KEY={SECRET_KEY}\n')
+    except OSError:
+        pass
 
 # Demo accounts and the default development password are accepted only when
 # the project is running in demo mode. Production deployments should set

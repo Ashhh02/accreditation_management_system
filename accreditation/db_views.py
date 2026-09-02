@@ -438,12 +438,18 @@ class SubmissionWorkspaceView(ApprovedUserRequiredMixin, TemplateView):
         first_submission = submission_values[0] if submission_values else None
         status = first_submission.status if first_submission else EvidenceSubmission.DRAFT
         assignment = active_assignment(self.request.user)
+        if first_submission:
+            department_name = first_submission.department.name
+        elif assignment:
+            department_name = assignment.department.name
+        else:
+            department_name = 'No active department'
         return {
             'area_key': area.slug,
             'subarea_key': active_subarea['slug'] if active_subarea else '',
             'area_code': area.code,
             'area_name': area.name,
-            'department': first_submission.department.name if first_submission else (assignment.department.name if assignment else 'No active department'),
+            'department': department_name,
             'program_head': first_submission.program_head.get_full_name() if first_submission else (self.request.user.get_full_name() or self.request.user.username),
             'active_subarea': f"{active_subarea['code']} — {active_subarea['title']}" if active_subarea else area.name,
             'subarea_code': active_subarea['code'] if active_subarea else '',

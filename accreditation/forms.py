@@ -24,6 +24,24 @@ MAX_UPLOAD_SIZE = 5 * 1024 * 1024
 
 GENERIC_FILE_TYPES = {'application/octet-stream'}
 
+UNSUPPORTED_TYPE_ERROR = (
+    'Unsupported file type. Allowed: PDF, Word, Excel, PowerPoint, and JPEG/PNG images.'
+)
+
+
+def _validate_uploaded_file(uploaded):
+    """Validate a single uploaded supporting file, raising a ValidationError if invalid."""
+    if uploaded.size and uploaded.size > MAX_UPLOAD_SIZE:
+        raise forms.ValidationError('Each supporting file must be smaller than 5 MB.')
+    name = (uploaded.name or '').lower()
+    extension = name.rsplit('.', 1)[-1].__str__() if '.' in name else ''
+    extension = f'.{extension}' if extension else ''
+    content_type = (uploaded.content_type or '').lower()
+    if extension not in ALLOWED_EXTENSIONS:
+        raise forms.ValidationError(UNSUPPORTED_TYPE_ERROR)
+    if content_type and content_type not in ALLOWED_FILE_TYPES | GENERIC_FILE_TYPES:
+        raise forms.ValidationError('The file content does not match an allowed document type.')
+
 
 class MultipleFileInput(forms.ClearableFileInput):
     allow_multiple_selected = True
@@ -73,18 +91,7 @@ class EvidenceSubmissionForm(forms.ModelForm):
     def clean_files(self):
         files = self.cleaned_data.get('files') or []
         for uploaded in files:
-            if uploaded.size and uploaded.size > MAX_UPLOAD_SIZE:
-                raise forms.ValidationError('Each supporting file must be smaller than 5 MB.')
-            name = (uploaded.name or '').lower()
-            extension = name.rsplit('.', 1)[-1].__str__() if '.' in name else ''
-            extension = f'.{extension}' if extension else ''
-            content_type = (uploaded.content_type or '').lower()
-            if extension not in ALLOWED_EXTENSIONS:
-                raise forms.ValidationError(
-                    'Unsupported file type. Allowed: PDF, Word, Excel, PowerPoint, and JPEG/PNG images.'
-                )
-            if content_type and content_type not in ALLOWED_FILE_TYPES | GENERIC_FILE_TYPES:
-                raise forms.ValidationError('The file content does not match an allowed document type.')
+            _validate_uploaded_file(uploaded)
         return files
 
 

@@ -18,11 +18,27 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir --only-binary :all: -r requirements.txt
 
-COPY . .
+COPY manage.py ./
+COPY config config
+COPY core core
+COPY accounts accounts
+COPY accreditation accreditation
+COPY resources resources
+COPY intelligence intelligence
+COPY dashboard dashboard
+COPY static static
+COPY templates templates
 
-RUN DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY} python manage.py collectstatic --noinput
+RUN DJANGO_SECRET_KEY="${DJANGO_SECRET_KEY}" python manage.py collectstatic --noinput
+
+# Run as an unprivileged user; the app only needs read access plus static output.
+RUN groupadd --system webapp \
+    && useradd --system --gid webapp --no-create-home --home-dir /app webapp \
+    && chown -R webapp:webapp /app
+
+USER webapp
 
 EXPOSE 8000
 

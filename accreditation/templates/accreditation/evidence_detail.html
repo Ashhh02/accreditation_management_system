@@ -133,9 +133,9 @@
                 <div class="version-files">
                   {% for file in version.files.all %}
                     {% if file.file %}
-                      <a href="{% url 'accreditation:evidence_file_download' file.id %}">{{ file.original_name }}</a>
+                      <a href="{% url 'accreditation:evidence_file_download' file.id %}">Download {{ file.original_name }}</a>
                     {% else %}
-                      <a href="{{ file.link_url }}" target="_blank" rel="noreferrer">{{ file.original_name }}</a>
+                      <a href="{{ file.link_url }}" target="_blank" rel="noreferrer">Open external link: {{ file.original_name }}</a>
                     {% endif %}
                   {% endfor %}
                 </div>

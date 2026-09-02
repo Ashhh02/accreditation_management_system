@@ -10,5 +10,14 @@ media/
 zap-report.*
 .coverage
 htmlcov
+coverage.xml
 pytest_cache
 *.secret
+.github
+.bandit
+.flake8
+users.txt
+sonar-project.properties
+.env.example
+README.md
+requirements-dev.txt

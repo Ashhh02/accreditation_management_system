@@ -214,7 +214,7 @@ class Command(BaseCommand):
         """Create the shared working group and a 1:1 thread for the demo chat."""
         from resources.models import Conversation, Message
 
-        users_by_username = {username: user for username, user in users.items()}
+        users_by_username = dict(users)
 
         group, _ = Conversation.objects.update_or_create(
             title='Accreditation Working Group',

@@ -120,44 +120,31 @@ def ai_insights(user):
     """Curated advisory insights for the AI Insights page (AVA assessment)."""
     data = summary(user)
     submissions = accessible_submissions(user)
-    insights = []
+    insights = [
+        {
+            'title': 'Overall Readiness',
+            'description': f"{data['readiness']}% of visible evidence is complied or closed ({data['completed']} of {data['total']}).",
+            'tone': 'green' if data['readiness'] >= 80 else 'gold',
+            'icon': 'trend-up',
+        },
+        {
+            'title': 'Pending Internal Review',
+            'description': f"{data['pending']} item(s) are waiting on an assigned reviewer across the workflow stages.",
+            'tone': 'gold',
+            'icon': 'clock',
+        },
+        {
+            'title': 'Revision Queue',
+            'description': (
+                f"{data['revisions']} item(s) were returned to Program Heads for correction."
+                if data['revisions'] else 'Nothing is currently sitting in the revision queue.'
+            ),
+            'tone': 'rose' if data['revisions'] else 'green',
+            'icon': 'alert' if data['revisions'] else 'check',
+        },
+    ]
 
-    insights.append({
-        'title': 'Overall Readiness',
-        'description': f"{data['readiness']}% of visible evidence is complied or closed ({data['completed']} of {data['total']}).",
-        'tone': 'green' if data['readiness'] >= 80 else 'gold',
-        'icon': 'trend-up',
-    })
-    insights.append({
-        'title': 'Pending Internal Review',
-        'description': f"{data['pending']} item(s) are waiting on an assigned reviewer across the workflow stages.",
-        'tone': 'gold',
-        'icon': 'clock',
-    })
-    insights.append({
-        'title': 'Revision Queue',
-        'description': (
-            f"{data['revisions']} item(s) were returned to Program Heads for correction."
-            if data['revisions'] else 'Nothing is currently sitting in the revision queue.'
-        ),
-        'tone': 'rose' if data['revisions'] else 'green',
-        'icon': 'alert' if data['revisions'] else 'check',
-    })
-
-    cycle = AccreditationCycle.objects.filter(is_active=True).first()
-    level = AccreditationLevel.objects.filter(cycle=cycle).filter(code='I').first() if cycle else None
-    area_coverage = []
-    if level:
-        for area in level.areas.all():
-            required = EvidenceRequirement.objects.filter(area=area).count()
-            done = submissions.filter(requirement__area=area, status__in=COMPLETED_STATUSES).count()
-            rate = round(done * 100 / required) if required else 0
-            area_coverage.append({
-                'code': area.code,
-                'name': area.name,
-                'rate': rate,
-                'tone': 'green' if rate >= 80 else 'gold' if rate >= 50 else 'rose',
-            })
+    area_coverage = _area_coverage(user, submissions)
     weak_area = min(area_coverage, key=lambda item: item['rate']) if area_coverage else None
     if weak_area:
         insights.append({
@@ -226,6 +213,25 @@ def ai_insights(user):
     }
 
 
+def _area_coverage(user, submissions):
+    """Coverage ratio per area of the active cycle's level I, for the AI Insights page."""
+    cycle = AccreditationCycle.objects.filter(is_active=True).first()
+    level = AccreditationLevel.objects.filter(cycle=cycle).filter(code='I').first() if cycle else None
+    rows = []
+    if level:
+        for area in level.areas.all():
+            required = EvidenceRequirement.objects.filter(area=area).count()
+            done = submissions.filter(requirement__area=area, status__in=COMPLETED_STATUSES).count()
+            rate = round(done * 100 / required) if required else 0
+            rows.append({
+                'code': area.code,
+                'name': area.name,
+                'rate': rate,
+                'tone': 'green' if rate >= 80 else 'gold' if rate >= 50 else 'rose',
+            })
+    return rows
+
+
 def _overdue_counts(user):
     counts = {
         d['name']: 0
@@ -262,20 +268,158 @@ def retrieve(user, question):
     text = (question or '').lower()
 
     if any(word in text for word in ('revision', 'revise', 'returned', 'fix', 'correct', 'redo', 'resubmit', 'correction')):
-        return _intent_revisions(user, question)
+        return _revision_facts(user)
     if any(word in text for word in ('missing', 'not yet', 'draft', 'upload', 'incomplete', 'no evidence', 'document')):
-        return _intent_missing(user, question)
+        return _missing_facts(user)
     if any(word in text for word in ('deadline', 'due', 'overdue', 'on time', 'schedule')):
-        return _intent_deadlines(user, question)
+        return _deadline_facts(user)
     if any(word in text for word in ('pending', 'review', 'approve', 'queued', 'waiting', 'dean', 'area chair', 'qa')):
-        return _intent_pending(user, question)
+        return _pending_facts(user)
     if any(word in text for word in ('risk', 'critical', 'gap', 'warning', 'weak', 'threat', 'danger')):
-        return _intent_risks(user, question)
+        return _risk_facts(user)
     if any(word in text for word in ('department', 'program', 'office', 'college')):
-        return _intent_departments(user, question)
+        return _department_facts(user)
     if any(word in text for word in ('area', 'readiness', 'complied', 'compliance', 'summary', 'status', 'all')):
-        return _intent_areas(user, question)
-    return _intent_summary(user, question)
+        return _area_facts(user)
+    return _summary_facts(user)
+
+
+def _revision_facts(user):
+    items = list(accessible_submissions(user).filter(status=REVISION_STATUS).select_related(
+        'requirement', 'requirement__area', 'department',
+    ).order_by('-last_updated', '-id')[:6])
+    summary_text = f'{len(items)} visible evidence item(s) currently need revision.'
+    facts = []
+    for item in items:
+        latest = item.reviews.filter(decision='REQUEST_REVISION').order_by('-created_at').first()
+        facts.append({
+            'code': item.requirement.code,
+            'title': item.requirement.title,
+            'department': item.department.name,
+            'status': 'Needs Revision',
+            'notes': (latest.remarks if latest else '')[:180],
+        })
+    return {'intent': 'revision', 'headline': summary_text, 'facts': facts, 'sources': _sources(items)}
+
+
+def _missing_facts(user):
+    submissions = accessible_submissions(user)
+    total = submissions.count()
+    missing = submissions.filter(status=EvidenceSubmission.DRAFT).count()
+    not_started = submissions.exclude(status__in=COMPLETED_STATUSES).count()
+    summary_text = f'{missing} of {total} visible item(s) are still drafts; {not_started} are not yet complied or closed.'
+    items = list(submissions.filter(status=EvidenceSubmission.DRAFT).select_related(
+        'requirement', 'requirement__area', 'department',
+    ).order_by('requirement__deadline', 'requirement__code')[:6])
+    facts = [{
+        'code': item.requirement.code,
+        'title': item.requirement.title,
+        'department': item.department.name,
+        'status': 'Draft / Not Yet Submitted',
+    } for item in items]
+    return {'intent': 'missing', 'headline': summary_text, 'facts': facts, 'sources': _sources(items)}
+
+
+def _deadline_facts(user):
+    submissions = accessible_submissions(user).select_related('requirement', 'department')
+    today = timezone.localdate()
+    rows = []
+    for submission in submissions:
+        deadline = submission.requirement.deadline
+        if not deadline:
+            continue
+        if submission.status in COMPLETED_STATUSES:
+            continue
+        state = 'OVERDUE' if deadline < today else 'DUE SOON'
+        rows.append({
+            'code': submission.requirement.code,
+            'title': submission.requirement.title,
+            'department': submission.department.name,
+            'state': state,
+            'deadline': deadline.isoformat(),
+            'days': (deadline - today).days if deadline >= today else None,
+        })
+    rows.sort(key=lambda row: (0 if row['state'] == 'OVERDUE' else 1, row['deadline']))
+    overdue = sum(1 for row in rows if row['state'] == 'OVERDUE')
+    summary_text = f'{overdue} item(s) are past their deadline and {len(rows) - overdue} are due within 60 days.'
+    return {
+        'intent': 'deadlines',
+        'headline': summary_text,
+        'facts': rows[:8],
+        'sources': [{'title': f"{row['code']} · {row['department']} · {row['state']}", 'url': ''} for row in rows[:5]],
+    }
+
+
+def _pending_facts(user):
+    items = list(accessible_submissions(user).filter(status__in=ACTIVE_REVIEW_STATUSES).select_related(
+        'requirement', 'department', 'current_reviewer', 'current_review_role',
+    ).order_by('last_updated')[:6])
+    summary_text = f'{len(items)} item(s) are waiting on an assigned internal reviewer.'
+    facts = [{
+        'code': item.requirement.code,
+        'title': item.requirement.title,
+        'department': item.department.name,
+        'status': item.get_status_display(),
+        'reviewer': f"{item.current_reviewer.get_full_name() or item.current_reviewer.username} ({item.current_review_role.name if item.current_review_role else 'unassigned'})",
+    } for item in items]
+    return {'intent': 'pending', 'headline': summary_text, 'facts': facts, 'sources': _sources(items)}
+
+
+def _risk_facts(user):
+    recommendations = risk_recommendations(user)[:6]
+    top = next((item for item in recommendations if item['severity'] == 'High'), recommendations[0] if recommendations else None)
+    headline = (
+        f"Top risk: {top['department']} ({top['label']})."
+        if top else
+        'No high-risk gaps detected in your access scope.'
+    )
+    facts = [{
+        'department': row['department'],
+        'severity': row['severity'],
+        'compliance': f"{row['compliance']}%",
+        'recommendation': row['recommendation'],
+    } for row in recommendations]
+    return {'intent': 'risks', 'headline': headline, 'facts': facts, 'sources': []}
+
+
+def _department_facts(user):
+    rows = departments(user)
+    headline = f'{len(rows)} department(s) in scope; the lowest is {min(rows, key=lambda row: row["compliance"])["name"]} at {min(rows, key=lambda row: row["compliance"])["compliance"]}% compliance.' if rows else 'No department data in scope.'
+    facts = [{
+        'department': row['name'],
+        'compliance': f"{row['compliance']}%",
+        'status': row['status'],
+    } for row in rows]
+    return {'intent': 'departments', 'headline': headline, 'facts': facts, 'sources': []}
+
+
+def _area_facts(user):
+    data = summary(user)
+    level = AccreditationLevel.objects.filter(cycle=AccreditationCycle.objects.filter(is_active=True).first()).filter(code='I').first()
+    headlines = [
+        f"Overall readiness is {data['readiness']}% ({data['completed']} of {data['total']} visible item(s) complied or closed).",
+        f"{data['pending']} item(s) are in review and {data['revisions']} need revision.",
+    ]
+    facts = []
+    if level:
+        submissions = accessible_submissions(user)
+        for area in level.areas.all():
+            required = EvidenceRequirement.objects.filter(area=area).count()
+            done = submissions.filter(requirement__area=area, status__in=COMPLETED_STATUSES).count()
+            rate = round(done * 100 / required) if required else 0
+            facts.append({'area': area.name, 'coverage': f'{rate}%', 'done': done, 'required': required})
+    return {'intent': 'readiness', 'headline': ' '.join(headlines), 'facts': facts, 'sources': []}
+
+
+def _summary_facts(user):
+    data = summary(user)
+    headline = (
+        f"Across your scope: {data['readiness']}% readiness, {data['total']} visible submission(s), "
+        f"{data['pending']} in review, {data['revisions']} needing revision, {data['drafts']} still drafts."
+    )
+    facts = [{'area': 'Readiness', 'value': f"{data['readiness']}%"}, {'area': 'In Review', 'value': data['pending']},
+             {'area': 'Needs Revision', 'value': data['revisions']}, {'area': 'Drafts', 'value': data['drafts']}]
+    return {'intent': 'summary', 'headline': headline, 'facts': facts, 'sources': []}
 
 
 def _sources(submissions):
@@ -492,7 +636,7 @@ def trend_labels():
     return f'{start.strftime("%b")} {day(start)} - {today.strftime("%b")} {day(today)}, {today.year}'
 
 
-def trend_takeaway(user, weekly_submissions, weekly_revisions):
+def trend_takeaway(weekly_submissions, weekly_revisions):
     """Human takeaway sentence derived from the real trend data."""
     if len(weekly_submissions) < 2:
         return 'Not enough history to determine a trend yet.'

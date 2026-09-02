@@ -204,7 +204,7 @@
     if (options.body instanceof FormData) {
       headers['X-CSRFToken'] = getCookie('csrftoken');
     }
-    return fetch(url, Object.assign({ credentials: 'same-origin' }, options, { headers: headers }))
+    return fetch(url, { credentials: 'same-origin', ...options, headers: headers })
       .then(function (response) {
         if (!response.ok) {
           return response.json()
@@ -265,7 +265,7 @@
         const bubble = reply.querySelector('.assistant-bubble');
         bubble.classList.remove('is-pending');
         bubble.textContent = payload.answer || 'No answer available.';
-        if (payload.sources && payload.sources.length) {
+        if (payload.sources?.length) {
           const sources = document.createElement('div');
           sources.className = 'companion-sources';
           payload.sources.forEach(function (source) {
@@ -404,7 +404,7 @@
     const list = messageList();
     if (!list) return;
     const page = document.querySelector('[data-messages-api]');
-    if (page && page.dataset.currentUser && message.author_id) {
+    if (page?.dataset.currentUser && message.author_id) {
       message.mine = String(message.author_id) === String(page.dataset.currentUser);
       if (message.mine) {
         message.author = '';
@@ -426,10 +426,10 @@
 
   function markActiveConversationRead() {
     const ctx = resolveChatContext();
-    if (!ctx || !ctx.conversation) return;
+    if (!ctx?.conversation) return;
     const active = document.querySelector('.conversation-item.is-active .conversation-badge');
     if (active) active.remove();
-    if (chatState.connected && chatState.socket && chatState.socket.readyState === WebSocket.OPEN) {
+    if (chatState.connected && chatState.socket?.readyState === WebSocket.OPEN) {
       try {
         chatState.socket.send(JSON.stringify({ type: 'read', conversation_id: Number(ctx.conversation) }));
         return;
@@ -448,7 +448,7 @@
     if (!item) return;
     const badge = item.querySelector('.conversation-badge');
     if (badge) {
-      badge.textContent = (parseInt(badge.textContent, 10) || 0) + 1;
+      badge.textContent = (Number.parseInt(badge.textContent, 10) || 0) + 1;
     } else {
       const count = document.createElement('span');
       count.className = 'conversation-badge';
@@ -467,7 +467,7 @@
   }
 
   function handleChatEvent(conversationId, event, payload) {
-    if (event !== 'message' || !payload || !payload.message) return;
+    if (event !== 'message' || !payload?.message) return;
     const ctx = resolveChatContext();
     if (ctx && String(conversationId) === String(ctx.conversation)) {
       appendOrConfirmMessage(payload.message);
@@ -522,7 +522,7 @@
       return;
     }
 
-    const clientMessageId = 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+    const clientMessageId = 'c' + Date.now().toString(36) + crypto.getRandomValues(new Uint32Array(1))[0].toString(36);
     const optimistic = {
       client_message_id: clientMessageId,
       text: text,
@@ -534,7 +534,7 @@
     input.value = '';
     list.scrollTop = list.scrollHeight;
 
-    if (chatState.connected && chatState.socket && chatState.socket.readyState === WebSocket.OPEN) {
+    if (chatState.connected && chatState.socket?.readyState === WebSocket.OPEN) {
       try {
         chatState.socket.send(JSON.stringify({
           type: 'send_message',
@@ -626,7 +626,7 @@
 
   function pollNotifications() {
     const menuRoot = document.querySelector('[data-notification-menu]');
-    if (!menuRoot || !menuRoot.dataset.notificationFeedUrl) return;
+    if (!menuRoot?.dataset.notificationFeedUrl) return;
 
     fetch(menuRoot.dataset.notificationFeedUrl, { credentials: 'same-origin' })
       .then(function (response) {

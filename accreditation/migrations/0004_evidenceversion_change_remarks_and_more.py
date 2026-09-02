@@ -4,10 +4,10 @@ from django.db import migrations, models
 
 
 def backfill_version_flags(apps, schema_editor):
-    EvidenceVersion = apps.get_model('accreditation', 'EvidenceVersion')
-    for submission_id in EvidenceVersion.objects.values_list('submission_id', flat=True).distinct():
+    evidence_version_model = apps.get_model('accreditation', 'EvidenceVersion')
+    for submission_id in evidence_version_model.objects.values_list('submission_id', flat=True).distinct():
         versions = list(
-            EvidenceVersion.objects.filter(submission_id=submission_id).order_by('-version_number')
+            evidence_version_model.objects.filter(submission_id=submission_id).order_by('-version_number')
         )
         if not versions:
             continue
@@ -16,7 +16,7 @@ def backfill_version_flags(apps, schema_editor):
         for version in versions[1:]:
             version.is_current = False
             version.status = 'SUPERSEDED'
-        EvidenceVersion.objects.bulk_update(versions, ['is_current', 'status'])
+        evidence_version_model.objects.bulk_update(versions, ['is_current', 'status'])
 
 
 class Migration(migrations.Migration):

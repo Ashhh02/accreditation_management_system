@@ -87,8 +87,9 @@
         </div>
         <footer class="companion-composer">
           <div class="composer-row">
-            <input type="text" placeholder="Ask AVA about requirements, gaps, or deadlines...">
-            <button type="button" aria-label="Send message">{% icon 'chevron-right' %}</button>
+            <label class="sr-only" for="companion-prompt">Ask AVA about requirements, gaps, or deadlines</label>
+            <input id="companion-prompt" type="text" placeholder="Ask AVA about requirements, gaps, or deadlines...">
+            <button type="button" aria-label="Send message">{% icon 'chevron-right' %}<span class="sr-only">Send message</span></button>
           </div>
           <p>AVA responses are advisory only. Formal accreditation decisions rest with the accrediting body.</p>
         </footer>

@@ -1,4 +1,5 @@
 from django.contrib.auth import get_user_model
+from django.db.models import Prefetch
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
@@ -11,7 +12,7 @@ from accreditation.models import EvidenceFile, EvidenceSubmission
 from core.access import accessible_repository_submissions
 from core.mixins import ApprovedUserRequiredMixin
 
-from .models import Conversation
+from .models import Conversation, Message, MessageRead
 from .services import RateLimitedError, mark_read, message_serialize, post_message, unread_count
 
 
@@ -121,18 +122,35 @@ class CommunicationView(ApprovedUserRequiredMixin, TemplateView):
         else:
             active = _ensure_membership(user)
 
+        conversation_rows = Conversation.objects.filter(members=user).prefetch_related(
+            Prefetch(
+                'messages',
+                queryset=Message.objects.select_related('author').order_by('-created_at'),
+                to_attr='latest_messages',
+            ),
+            'members',
+            Prefetch('reads', queryset=MessageRead.objects.filter(user=user), to_attr='reader_marks'),
+        )
         conversations = []
         member_ids = list(active.members.values_list('id', flat=True))
-        for conversation in Conversation.objects.filter(members=user):
-            last = conversation.messages.select_related('author').order_by('-created_at').first()
+        for conversation in conversation_rows:
+            prefetched = conversation.latest_messages
+            last = prefetched[0] if prefetched else None
+            mark = conversation.reader_marks[0] if conversation.reader_marks else None
+            last_read_at = mark.last_read_at if mark else None
+            peer = next((member for member in conversation.members.all() if member.pk != user.pk), None)
+            unread = 0
+            for message in prefetched:
+                if message.author_id != user.pk and (last_read_at is None or message.created_at > last_read_at):
+                    unread += 1
             conversations.append({
                 'id': conversation.id,
-                'initials': _initials(conversation.members.exclude(pk=user.pk).first() or user),
+                'initials': _initials(peer or user),
                 'name': conversation.title,
                 'context': conversation.context,
                 'preview': last.body[:90] if last else 'No messages yet',
                 'time': _time_label(last.created_at) if last else '—',
-                'unread': unread_count(user, conversation),
+                'unread': unread,
                 'active': conversation.pk == active.pk,
                 'pinned': conversation.is_group_thread,
             })
@@ -150,8 +168,8 @@ class CommunicationView(ApprovedUserRequiredMixin, TemplateView):
                 'linked': f'Linked: {active.related_submission.requirement.code} Submission' if active.related_submission_id else '',
                 'member_ids': member_ids,
             },
-            'messages_api_url': '/communication/messages/',
-            'read_api_url': '/communication/read/',
+            'messages_api_url': reverse('resources:messages_api'),
+            'read_api_url': reverse('resources:messages_read'),
             'ws_path': '/ws/communication/',
         })
         return context

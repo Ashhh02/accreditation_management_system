@@ -81,7 +81,7 @@ class ReportsMonitoringView(ApprovedUserRequiredMixin, TemplateView):
             'trend_approval_points': _points(weekly_submitted),
             'trend_revision_points': _points(weekly_revisions),
             'trend_range_label': services.trend_labels(),
-            'trend_takeaway': services.trend_takeaway(user, weekly_submitted, weekly_revisions),
+            'trend_takeaway': services.trend_takeaway(weekly_submitted, weekly_revisions),
         })
         return context
 

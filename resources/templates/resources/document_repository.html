@@ -70,7 +70,7 @@
               <div class="repo-actions">
                 {% icon 'search' %}
                 <a href="{{ document.download_url }}" class="repo-download-btn" aria-label="Download {{ document.name }}">
-                  {% icon 'cloud' %}
+                  {% icon 'cloud' %}<span class="sr-only">Download {{ document.name }}</span>
                 </a>
               </div>
             </article>

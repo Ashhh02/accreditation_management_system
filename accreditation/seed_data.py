@@ -1,9 +1,11 @@
-﻿"""Seed reference data for the demo command and QA fixtures.
+"""Seed reference data for the demo command and QA fixtures.
 
 These are the canonical PACUCOA area/sub-area definitions. The live area
 structure is stored in the database (AccreditationArea / AccreditationSubArea);
 this module is only used to seed and reset that data.
 """
+
+DESIRED_OUTCOMES_TITLE = 'Desired Outcomes and Other Exhibits'
 
 AREA_SUBAREAS = {
     'area-i': {
@@ -14,7 +16,7 @@ AREA_SUBAREAS = {
             {'code': '1.2', 'title': 'Statement of College/Department Mission, Vision and Objectives'},
             {'code': '1.3', 'title': 'Educational Objectives of the Program and Program Outcomes/Student Learning Outcomes'},
             {'code': '1.4', 'title': 'Awareness, Acceptance and Implementation of the Institutional Philosophy, Mission, Vision, Objectives and Program Outcomes'},
-            {'code': '1.5', 'title': 'Desired Outcomes and Other Exhibits'},
+            {'code': '1.5', 'title': DESIRED_OUTCOMES_TITLE},
         ],
     },
     'area-ii': {
@@ -27,7 +29,7 @@ AREA_SUBAREAS = {
             {'code': '2.4', 'title': 'Rank, Tenure, Remuneration and Fringe Benefits'},
             {'code': '2.5', 'title': 'Faculty Development'},
             {'code': '2.6', 'title': 'Research and Publications'},
-            {'code': '2.7', 'title': 'Desired Outcomes and Other Exhibits'},
+            {'code': '2.7', 'title': DESIRED_OUTCOMES_TITLE},
         ],
     },
     'area-iii': {
@@ -51,7 +53,7 @@ AREA_SUBAREAS = {
             {'code': '4.2', 'title': 'Equipment and Supplies'},
             {'code': '4.3', 'title': 'Maintenance'},
             {'code': '4.4', 'title': 'Special Provisions'},
-            {'code': '4.5', 'title': 'Desired Outcomes and Other Exhibits'},
+            {'code': '4.5', 'title': DESIRED_OUTCOMES_TITLE},
         ],
     },
     'area-v': {
@@ -130,7 +132,7 @@ AREA_SUBAREAS = {
             {'code': '10.6', 'title': 'Administrative Performance'},
             {'code': '10.7', 'title': 'Institutional Planning and Development'},
             {'code': '10.8', 'title': 'Quality Assurance'},
-            {'code': '10.9', 'title': 'Desired Outcomes and Other Exhibits'},
+            {'code': '10.9', 'title': DESIRED_OUTCOMES_TITLE},
         ],
     },
     'area-xi': {

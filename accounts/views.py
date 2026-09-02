@@ -32,6 +32,7 @@ from .forms import (
 
 
 DASHBOARD_INDEX = 'dashboard:index'
+REQUEST_ACCOUNT_TITLE = 'Request an account'
 
 
 def _safe_next_url(request):
@@ -111,7 +112,7 @@ class RegisterView(TemplateView):
     template_name = 'accounts/register.html'
 
     def get(self, request, *args, **kwargs):
-        return render(request, self.template_name, {'form': RegistrationForm(), 'page_title': 'Request an account'})
+        return render(request, self.template_name, {'form': RegistrationForm(), 'page_title': REQUEST_ACCOUNT_TITLE})
 
     def post(self, request, *args, **kwargs):
         form = RegistrationForm(request.POST)
@@ -119,7 +120,7 @@ class RegisterView(TemplateView):
         if hit_rate_limit(request, 'register', rate['limit'], rate['window']):
             return render(request, self.template_name, {
                 'form': form,
-                'page_title': 'Request an account',
+                'page_title': REQUEST_ACCOUNT_TITLE,
                 'rate_limited': True,
             })
         if form.is_valid():
@@ -132,7 +133,7 @@ class RegisterView(TemplateView):
                 details={'email': request.POST.get('email', '').strip()},
             )
             return render(request, 'accounts/registration_pending.html', {'page_title': 'Account pending approval'})
-        return render(request, self.template_name, {'form': form, 'page_title': 'Request an account'})
+        return render(request, self.template_name, {'form': form, 'page_title': REQUEST_ACCOUNT_TITLE})
 
 
 class PortalLogoutView(LogoutView):
